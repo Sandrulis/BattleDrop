@@ -1,0 +1,70 @@
+import type { Product } from "../lib/types";
+import { getBattleContext, getProductMeta } from "../lib/product-meta";
+
+type ProductDetailSidebarProps = {
+  product: Product;
+  voteCount: number;
+};
+
+export function ProductDetailSidebar({
+  product,
+  voteCount,
+}: ProductDetailSidebarProps) {
+  const meta = getProductMeta(product.id);
+  const battle = getBattleContext();
+
+  return (
+    <aside className="flex flex-col gap-4 lg:sticky lg:top-[4.5rem] lg:self-start">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-zinc-900">Launch stats</h3>
+        <dl className="mt-3 space-y-2.5 text-xs">
+          <StatRow label="Battle" value={`Week ${battle.week}, ${battle.year}`} />
+          <StatRow label="Votes" value={String(voteCount)} />
+          <StatRow label="Comments" value={String(product.comments)} />
+          <StatRow label="Launched" value={meta.launchedAt} />
+          <StatRow label="Team" value={meta.teamSize} />
+          <StatRow label="Pricing" value={meta.pricing} />
+        </dl>
+      </div>
+
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-zinc-900">Maker</h3>
+        <p className="mt-2 text-sm font-medium text-zinc-800">{product.maker}</p>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+          Submitted for Week {battle.week} battle. One project per founder per
+          week.
+        </p>
+        <a
+          href={`https://${product.url}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-[#da552f] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#c44a28]"
+        >
+          Visit website ↗
+        </a>
+      </div>
+
+      <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-5">
+        <h3 className="text-sm font-semibold text-zinc-900">Share</h3>
+        <p className="mt-1 text-xs text-zinc-500">
+          Spread the word about this launch on BattleDrop.
+        </p>
+        <button
+          type="button"
+          className="mt-3 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50"
+        >
+          Copy link
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function StatRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <dt className="text-zinc-500">{label}</dt>
+      <dd className="font-semibold text-zinc-800">{value}</dd>
+    </div>
+  );
+}
