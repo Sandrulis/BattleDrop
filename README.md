@@ -46,7 +46,8 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) locally.  
+Production: [https://battle-drop.vercel.app](https://battle-drop.vercel.app)
 
 ### Build
 
@@ -76,7 +77,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only service role key |
-| `NEXT_PUBLIC_SITE_URL` | Yes | App URL (`http://localhost:3000` locally) |
+| `NEXT_PUBLIC_SITE_URL` | Yes | `http://localhost:3000` locally · `https://battle-drop.vercel.app` on Vercel |
 
 Get keys from **Supabase Dashboard → Project Settings → API**.
 
@@ -140,7 +141,9 @@ Promoted products are excluded from the organic vote ranking to avoid duplicates
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Enable **Google** auth provider (Authentication → Providers)
-3. Add redirect URLs: `http://localhost:3000/**` and your production URL
+3. Add redirect URLs in **Authentication → URL Configuration**:
+   - Site URL (prod): `https://battle-drop.vercel.app`
+   - Redirect URLs: `http://localhost:3000/**` and `https://battle-drop.vercel.app/**`
 4. Run migrations (schema tables: `products`, `battles`, `profiles`, `votes`, `comments`, `promoted_slots`)
 5. Fill `.env.local` and run `node scripts/test-supabase.mjs`
 
@@ -148,11 +151,17 @@ Promoted products are excluded from the organic vote ranking to avoid duplicates
 
 ## Deployment
 
-Deploy to [Vercel](https://vercel.com) by importing the GitHub repo. Add the same environment variables in the Vercel project settings and set:
+Deploy to [Vercel](https://vercel.com) by importing the GitHub repo.
+
+**Live app:** [https://battle-drop.vercel.app](https://battle-drop.vercel.app)
+
+Add the same Supabase environment variables in Vercel project settings. Override the site URL for production:
 
 ```
-NEXT_PUBLIC_SITE_URL=https://your-app.vercel.app
+NEXT_PUBLIC_SITE_URL=https://battle-drop.vercel.app
 ```
+
+Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` in your local `.env.local` only.
 
 ---
 
