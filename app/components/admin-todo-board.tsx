@@ -515,9 +515,15 @@ export function AdminTodoBoard({
                                 : "border-zinc-200 hover:border-zinc-300 hover:shadow-sm"
                             }`}
                           >
-                            <div className="flex items-start gap-2.5">
+                            <div
+                              className={`flex gap-2.5 ${
+                                task.description ? "items-start" : "items-center"
+                              }`}
+                            >
                               <span
-                                className="mt-0.5 text-zinc-400"
+                                className={`text-zinc-400 ${
+                                  task.description ? "mt-0.5" : ""
+                                }`}
                                 aria-hidden
                               >
                                 <i className="fa-solid fa-grip-vertical text-xs" />
@@ -527,7 +533,7 @@ export function AdminTodoBoard({
                                   {task.title}
                                 </p>
                                 {task.description ? (
-                                  <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                                  <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-zinc-500">
                                     {task.description}
                                   </p>
                                 ) : null}
