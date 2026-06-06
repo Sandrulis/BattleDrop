@@ -4,7 +4,7 @@ import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
 
 export const metadata: Metadata = {
-  title: "Season Archive — BattleDrop",
+  title: "Season Archive",
   description: "Browse weekly battle winners for every week of the year.",
 };
 

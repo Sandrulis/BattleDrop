@@ -1,5 +1,5 @@
-import { ArchiveLoadingSkeleton } from "../components/loading-skeletons";
+import { SiteRouteLoading } from "@/app/components/loading";
 
 export default function ArchiveLoading() {
-  return <ArchiveLoadingSkeleton />;
+  return <SiteRouteLoading />;
 }

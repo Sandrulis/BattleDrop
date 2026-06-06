@@ -6,6 +6,7 @@ type VoteButtonProps = {
   onClick: () => void;
   compact?: boolean;
   className?: string;
+  disabled?: boolean;
 };
 
 export function VoteButton({
@@ -14,14 +15,18 @@ export function VoteButton({
   onClick,
   compact = false,
   className = "",
+  disabled = false,
 }: VoteButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={voted}
       aria-label={voted ? "Remove vote" : "Upvote"}
-      className={`flex shrink-0 !cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 transition-all ${
+      className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border-2 transition-all ${
+        disabled ? "cursor-not-allowed opacity-60" : "!cursor-pointer"
+      } ${
         compact ? "w-9 px-0.5 py-1.5" : "w-[52px] px-1 py-2 sm:w-[56px]"
       } ${
         voted

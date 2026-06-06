@@ -2,12 +2,15 @@ import {
   hallOfFameEntries,
   hallOfFameMonth,
 } from "../lib/mock-data";
+import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
 
-export function Sidebar() {
+export async function Sidebar() {
+  const { siteName } = await getSiteSettings();
+
   return (
     <aside className="flex flex-col gap-4">
       <div id="how" className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-zinc-900">How BattleDrop works</h3>
+        <h3 className="text-sm font-semibold text-zinc-900">How {siteName} works</h3>
         <ol className="mt-3 space-y-3 text-xs leading-relaxed text-zinc-600">
           <li className="flex gap-2">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-700">

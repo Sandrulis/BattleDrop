@@ -22,7 +22,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-pulse {
+  .animate-pulse,
+  .animate-spin {
     animation: none;
   }
 }

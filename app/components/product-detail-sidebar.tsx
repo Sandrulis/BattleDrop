@@ -4,11 +4,13 @@ import { getBattleContext, getProductMeta } from "../lib/product-meta";
 type ProductDetailSidebarProps = {
   product: Product;
   voteCount: number;
+  siteName: string;
 };
 
 export function ProductDetailSidebar({
   product,
   voteCount,
+  siteName,
 }: ProductDetailSidebarProps) {
   const meta = getProductMeta(product.id);
   const battle = getBattleContext();
@@ -47,7 +49,7 @@ export function ProductDetailSidebar({
       <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-5">
         <h3 className="text-sm font-semibold text-zinc-900">Share</h3>
         <p className="mt-1 text-xs text-zinc-500">
-          Spread the word about this launch on BattleDrop.
+          Spread the word about this launch on {siteName}.
         </p>
         <button
           type="button"

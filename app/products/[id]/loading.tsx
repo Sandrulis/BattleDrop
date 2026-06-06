@@ -1,5 +1,5 @@
-import { ProductLoadingSkeleton } from "../../components/loading-skeletons";
+import { SiteRouteLoading } from "@/app/components/loading";
 
 export default function ProductLoading() {
-  return <ProductLoadingSkeleton />;
+  return <SiteRouteLoading />;
 }

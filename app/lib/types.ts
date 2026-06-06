@@ -1,5 +1,57 @@
 export type BattlePhase = "collecting" | "voting" | "closed";
 
+import type {
+  DateFormatOrder,
+  DateSeparator,
+  TimeFormat,
+} from "@/app/lib/site-settings-types";
+
+export type AppUser = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  is_admin: boolean;
+  created_at: string;
+  updated_at: string;
+  last_seen: string | null;
+  date_format: DateFormatOrder | null;
+  time_format: TimeFormat | null;
+  date_separator: DateSeparator | null;
+};
+
+export type ProjectStatus = "draft" | "published" | "archived";
+
+export type UserProject = {
+  id: string;
+  user_id: string;
+  url: string;
+  fetch_url: string;
+  name: string;
+  tagline: string;
+  description: string;
+  favicon_url: string | null;
+  screenshot_url: string | null;
+  status: ProjectStatus;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
+export type EditProjectData = {
+  id: string;
+  url: string;
+  fetchUrl: string;
+  name: string;
+  tagline: string;
+  description: string;
+  favicon: string | null;
+  screenshotUrl: string | null;
+  status: ProjectStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Product = {
   id: string;
   rank: number;

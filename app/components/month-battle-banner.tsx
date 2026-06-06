@@ -89,6 +89,21 @@ export function MonthBattleBanner() {
               </p>
             </div>
           </div>
+
+          {isVoting && (
+            <div className="shrink-0 text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                {countdown?.isEnded ? "Voting closed" : "Monthly voting ends in"}
+              </p>
+              <p
+                className="mt-0.5 font-mono text-lg font-semibold tabular-nums tracking-tight text-zinc-900 sm:text-xl"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {countdown?.label ?? COUNTDOWN_PLACEHOLDER}
+              </p>
+            </div>
+          )}
         </div>
 
         <ul className="mt-4 grid grid-cols-1 gap-2 min-[480px]:grid-cols-2 lg:grid-cols-5">
@@ -124,23 +139,6 @@ export function MonthBattleBanner() {
             </li>
           ))}
         </ul>
-
-        {isVoting && (
-          <div className="mt-4 flex justify-end">
-            <div className="text-right">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-                {countdown?.isEnded ? "Voting closed" : "Monthly voting ends in"}
-              </p>
-              <p
-                className="mt-0.5 font-mono text-lg font-semibold tabular-nums tracking-tight text-zinc-900 sm:text-xl"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                {countdown?.label ?? COUNTDOWN_PLACEHOLDER}
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {isVoting && (

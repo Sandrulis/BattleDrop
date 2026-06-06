@@ -6,13 +6,16 @@ import {
   getCountdown,
   type CountdownState,
 } from "../lib/countdown";
+import { formatBattleWeekRange } from "../lib/battle-week";
 import type { Battle } from "../lib/types";
+import { useSiteDateSettings } from "./site-date-settings-provider";
 
 type BattleHeroProps = {
   battle: Battle;
 };
 
 export function BattleHero({ battle }: BattleHeroProps) {
+  const dateSettings = useSiteDateSettings();
   const isVoting = battle.phase === "voting";
   const filled = battle.projectsSubmitted >= battle.projectsRequired;
 
@@ -49,10 +52,8 @@ export function BattleHero({ battle }: BattleHeroProps) {
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
               Week {battle.week}, {battle.year}
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-              Founders compete. The community picks the winner. Top 5 enter the{" "}
-              <span className="font-medium text-zinc-800">Hall of Fame</span> —
-              then climb to monthly and annual championships.
+            <p className="mt-1 text-sm text-zinc-500">
+              {formatBattleWeekRange(battle.week, battle.year, dateSettings)}
             </p>
           </div>
 
