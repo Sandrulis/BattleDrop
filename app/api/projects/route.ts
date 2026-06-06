@@ -5,6 +5,7 @@ import {
   normalizeProjectInputUrl,
   parseScreenshotRemoteUrl,
 } from "@/app/lib/projects/project-utils";
+import { assertMaxLength, INPUT_LIMITS } from "@/app/lib/security/input-limits";
 
 type SaveProjectBody = {
   url?: string;
@@ -47,6 +48,15 @@ export async function POST(request: Request) {
       { error: "URL, name, and tagline are required." },
       { status: 400 },
     );
+  }
+
+  try {
+    assertMaxLength(name, INPUT_LIMITS.projectName, "Name");
+    assertMaxLength(tagline, INPUT_LIMITS.projectTagline, "Tagline");
+    assertMaxLength(description, INPUT_LIMITS.projectDescription, "Description");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid project data.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const eligibility = await getProjectSaveEligibility(user.id, url);

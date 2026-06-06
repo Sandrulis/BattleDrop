@@ -1,10 +1,17 @@
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { logAdminAction } from "@/app/lib/security/log-admin-action";
+import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 import type { AppUser } from "@/app/lib/types";
 
 export async function updateUserAdminStatus(
   userId: string,
   isAdmin: boolean,
 ): Promise<AppUser | null> {
+  const currentUser = await getCurrentAppUser();
+  if (!currentUser?.is_admin) {
+    throw new Error("Admin access required.");
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("users")
@@ -22,6 +29,14 @@ export async function updateUserAdminStatus(
   if (!data) {
     throw new Error("User not found.");
   }
+
+  await logAdminAction({
+    actorId: currentUser.id,
+    action: "user.admin.update",
+    entityType: "user",
+    entityId: userId,
+    metadata: { isAdmin },
+  });
 
   return data;
 }

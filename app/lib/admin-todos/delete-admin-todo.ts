@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { logAdminAction } from "@/app/lib/security/log-admin-action";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 
 export async function deleteAdminTodo(taskId: string) {
@@ -13,4 +14,11 @@ export async function deleteAdminTodo(taskId: string) {
   if (error) {
     throw new Error(error.message);
   }
+
+  await logAdminAction({
+    actorId: currentUser.id,
+    action: "admin_todo.delete",
+    entityType: "admin_todo",
+    entityId: taskId,
+  });
 }

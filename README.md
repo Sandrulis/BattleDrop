@@ -24,11 +24,11 @@ Weekly product battles for early-stage founders. Community votes, promoted leade
 
 - **Google sign-in** — Supabase Auth with session refresh via `proxy.ts`; OAuth callback supports `?next=` return path
 - **Submit product** — two-step flow (URL → review details); guests can start without signing in
-  - **Step 1** — enter URL (protocol optional; `https://` added automatically), duplicate check by **domain** (e.g. `repazy.com` blocks `repazy.com/any-path`)
+  - **Step 1** — enter URL; **signed-in users** get a duplicate check by **domain** before preview (guests skip client check — duplicate blocked on save)
   - **Step 2** — guests see **Login + Save** (not Save); draft stored in `sessionStorage`, then Google sign-in → return to `/submit` → auto-save
   - **Signed-in users** — standard **Save** button; edit via `/submit?projectId=…` (auth required)
   - Meta fetch (direct + Microlink fallback), favicon, screenshot proxy
-- **Duplicate URLs** — server checks all projects (active, soft-deleted, any owner) by normalized host; toast: *This project is already in the database.*
+- **Duplicate URLs** — signed-in submit flow checks domain before preview; save always checks server-side (active, soft-deleted, any owner)
 - **My Projects** — list drafts, edit, soft-delete, full-page preview
 - **User settings** (`/settings`) — date/time format preferences with account side panel (member since, last seen, quick links); site name and slogan are admin-only
 
@@ -45,6 +45,17 @@ Weekly product battles for early-stage founders. Community votes, promoted leade
   - Add task via header button → modal (title + description)
   - Edit task via pencil icon on each card → modal
 - **Settings** — site name, slogan, date/time display defaults (`site_settings` table)
+
+### Security
+
+- **SSRF protection** — user-supplied URLs validated before server fetch (`app/lib/security/safe-url.ts`)
+- **Safe OAuth redirects** — `?next=` sanitized against open redirects
+- **Rate limits** — public fetch routes (preview, screenshot, check-url) per IP
+- **Security headers** — CSP, X-Frame-Options, Referrer-Policy (`next.config.ts`)
+- **Input limits** — API validation + DB constraints (migration 009)
+- **Admin audit log** — settings, role changes, and todo actions → `admin_audit_log`
+- **CI** — npm audit, security unit tests, lint, build, gitleaks (see below)
+- **Docs** — [`security-check.md`](security-check.md) (score **8/10**, checklist, remaining work)
 
 ### UX patterns
 
@@ -95,7 +106,9 @@ Production: [https://battle-drop.vercel.app](https://battle-drop.vercel.app)
 | `npm run build` | Production build |
 | `npm start` | Run production server |
 | `npm run lint` | ESLint |
+| `npm run test:security` | Security unit tests (redirect + IP blocklist) |
 | `npm run db:migrate` | Apply `supabase/migrations/*.sql` in order |
+| `npm run db:check-migrations` | List required migration files |
 
 ---
 
@@ -149,15 +162,43 @@ node scripts/test-supabase.mjs
 |-------|---------|------|-------------|
 | `/api/projects` | POST | Yes | Create draft; returns `{ skipped, message }` if URL already in DB |
 | `/api/projects/[id]` | GET, PATCH, DELETE | Yes | Read, update, soft-delete |
-| `/api/projects/check-url` | GET | No | Duplicate check by domain; `{ blocked, message }` |
-| `/api/project-preview` | POST | No | Fetch page meta for submit form |
-| `/api/project-screenshot` | GET | No | Screenshot proxy |
+| `/api/projects/check-url` | GET | Yes | Duplicate check by domain; rate limited |
+| `/api/project-preview` | POST | Public | Fetch page meta; SSRF guard + rate limit |
+| `/api/project-screenshot` | GET | Public | Screenshot proxy; SSRF guard + rate limit |
 | `/api/site-settings` | GET, PATCH | GET public · PATCH admin | Site config |
 | `/api/user-settings` | GET, PATCH | Yes | User date/time prefs |
 | `/api/users/[id]/admin` | PATCH | Admin | Grant/revoke admin role |
 | `/api/admin-todos` | POST | Admin | Create todo task |
 | `/api/admin-todos/board` | PUT | Admin | Sync column order after drag-and-drop |
 | `/api/admin-todos/[id]` | PATCH, DELETE | Admin | Update title/description · delete task |
+
+---
+
+## Security & CI
+
+**Local checks** (run before push):
+
+```bash
+npm audit --audit-level=moderate
+npm run test:security
+npm run lint
+npm run build
+npm run db:check-migrations
+```
+
+**GitHub Actions** (on push/PR to `main`):
+
+| Workflow | Job | Purpose |
+|----------|-----|---------|
+| `security-audit.yml` | npm-audit | Dependency audit (`moderate`+) |
+| `security-smoke.yml` | smoke | Security tests, lint, production build |
+| `secret-scan.yml` | gitleaks | Secret scanning |
+
+**Dependabot** — weekly npm + GitHub Actions updates (`.github/dependabot.yml`).
+
+Full checklist, API auth matrix, and remaining work: [`security-check.md`](security-check.md).  
+CSRF assumptions: [`docs/security/csrf-posture.md`](docs/security/csrf-posture.md).  
+Supabase linter cadence: [`docs/security/supabase-linter-review.md`](docs/security/supabase-linter-review.md).
 
 ---
 
@@ -242,9 +283,10 @@ app/
 ├── auth/                 # OAuth callback + error page
 ├── components/           # UI (feed, hero, toast, loading, settings-side-panel, user-settings-form)
 ├── lib/
-│   ├── admin-todos/      # Todo board CRUD, column sync
-│   ├── auth/             # `signInWithGoogle` (OAuth + optional return path)
+│   ├── admin-todos/      # Todo board CRUD, atomic RPC sync
+│   ├── auth/             # `signInWithGoogle` (OAuth + safe return path)
 │   ├── projects/         # CRUD, URL normalize/host match, duplicate checks
+│   ├── security/         # SSRF, rate limit, input limits, audit log, redirect helper
 │   ├── site-settings/    # get/update site_settings, format helpers
 │   ├── supabase/         # Server, client, admin clients
 │   └── users/            # Profile sync, last seen, date/time prefs
@@ -258,11 +300,15 @@ app/
 ├── page.tsx              # Home
 └── layout.tsx            # Root layout, metadata, date settings provider
 
+.github/workflows/        # security-audit, security-smoke, secret-scan
+docs/security/           # CSRF posture, Supabase linter review
 .cursor/rules/            # Cursor agent conventions (date formats, toast, loading)
-supabase/migrations/      # Ordered SQL migrations (001–008)
+supabase/migrations/      # Ordered SQL migrations (001–009)
 scripts/
 ├── apply-migrations.mjs  # Run migrations against Supabase Postgres
+├── check-required-migrations.mjs
 └── test-supabase.mjs     # Connectivity check
+security-check.md         # Security score, checklist, backlog
 ```
 
 ### Key files
@@ -277,11 +323,15 @@ scripts/
 - `app/components/admin-todo-board.tsx` — drag-and-drop todo columns + add/edit modals
 - `app/components/admin-todo-form-modal.tsx` — shared add/edit task modal
 - `app/lib/admin-todos/` — get/create/update/delete/sync board against `admin_todos`
+- `app/lib/security/safe-url.ts` — SSRF protection for outbound fetches
+- `app/lib/security/log-admin-action.ts` — admin audit log writes
+- `next.config.ts` — security headers (CSP, X-Frame-Options, …)
 - `app/components/submit-product-form.tsx` — two-step submit; guest **Login + Save** flow
 - `app/lib/projects/find-existing-project-by-url.ts` — duplicate detection by host (admin client)
 - `app/lib/projects/project-utils.ts` — `normalizeProjectInputUrl`, `normalizeProjectHost`
 - `app/lib/auth/sign-in-with-google.ts` — shared OAuth redirect helper
-- `.env.example` — environment variable template
+- `security-check.md` — security score, checklist, CI workflows
+- `docs/security/` — CSRF posture, Supabase linter cadence
 
 ---
 
@@ -318,12 +368,20 @@ Promoted products are excluded from the organic vote ranking to avoid duplicates
    | `006_user_date_time_preferences.sql` | Per-user date/time columns + update policy |
    | `007_admin_todos.sql` | Shared admin todo board (`admin_todos`) |
    | `008_security_function_hardening.sql` | Function `search_path` + EXECUTE hardening |
+   | `009_security_hardening.sql` | Audit log, input limits, atomic todo board RPC |
 
    ```bash
    npm run db:migrate
    ```
 
    Or paste each file into **Supabase → SQL Editor**.
+
+   Verify migration 009:
+
+   ```sql
+   select to_regclass('public.admin_audit_log');
+   select proname from pg_proc where proname = 'sync_admin_todo_board';
+   ```
 
 5. Set an admin user: `update public.users set is_admin = true where email = 'you@example.com';`
 6. Fill `.env.local` and run `node scripts/test-supabase.mjs`
@@ -354,7 +412,8 @@ Add Supabase environment variables in Vercel project settings. Set:
 NEXT_PUBLIC_SITE_URL=https://battle-drop.vercel.app
 ```
 
-Run all migrations against the production Supabase project before deploying.
+Run all migrations against the production Supabase project before deploying.  
+Enable GitHub **secret scanning push protection** in repo settings (recommended).
 
 ---
 
@@ -363,7 +422,7 @@ Run all migrations against the production Supabase project before deploying.
 Version follows `package.json` (`semver`). Every commit message ends with the version tag:
 
 ```
-Short description of the change. v0.1.2
+Short description of the change. v0.1.5
 ```
 
 Bump the version in `package.json` when the change is user-facing or notable.
@@ -378,8 +437,11 @@ Bump the version in `package.json` when the change is user-facing or notable.
 - [x] Guest submit flow (Login + Save, post-login auto-save, domain duplicate check)
 - [x] Admin panel (users, site settings)
 - [x] Admin todo board — DB-backed drag-and-drop columns, add/edit/delete (migration 007)
+- [x] Security hardening — SSRF, rate limits, headers, audit log, CI (migrations 008–009)
 - [x] Site-wide date/time formats + per-user overrides (`/settings`, migration 006)
 - [x] Toast feedback + route loading spinners (header/footer stay visible)
+- [ ] Admin audit log UI (read-only view in admin panel)
+- [ ] Global rate limiting (edge/WAF) for production scale
 - [ ] Persistent votes and comments
 - [ ] Publish flow (draft → live battle)
 - [ ] Seed database from mock data / real battles

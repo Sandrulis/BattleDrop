@@ -164,7 +164,8 @@ function buildMetaResult(
 }
 
 export async function fetchProjectMeta(rawUrl: string): Promise<ProjectPreviewMeta> {
-  const pageUrl = new URL(rawUrl);
+  const { assertSafeExternalUrl } = await import("@/app/lib/security/safe-url");
+  const pageUrl = await assertSafeExternalUrl(rawUrl);
   const fetchUrl = withLangEn(pageUrl.href);
   const html = await fetchPageHtml(fetchUrl);
 

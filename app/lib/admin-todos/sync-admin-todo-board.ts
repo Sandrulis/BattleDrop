@@ -1,8 +1,6 @@
-import {
-  boardColumnToDbColumn,
-  type AdminTodoBoardPayload,
-} from "@/app/lib/admin-todos/admin-todo-types";
+import type { AdminTodoBoardPayload } from "@/app/lib/admin-todos/admin-todo-types";
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { logAdminAction } from "@/app/lib/security/log-admin-action";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 
 function validateBoardPayload(payload: AdminTodoBoardPayload) {
@@ -30,47 +28,22 @@ export async function syncAdminTodoBoard(payload: AdminTodoBoardPayload) {
   validateBoardPayload(payload);
 
   const admin = createAdminClient();
-  const allIds = [...payload.pending, ...payload.inProgress];
+  const { error } = await admin.rpc("sync_admin_todo_board", {
+    pending_ids: payload.pending,
+    in_progress_ids: payload.inProgress,
+  });
 
-  if (allIds.length > 0) {
-    const { data: existingRows, error: existingError } = await admin
-      .from("admin_todos")
-      .select("id")
-      .in("id", allIds);
-
-    if (existingError) {
-      throw new Error(existingError.message);
-    }
-
-    if ((existingRows?.length ?? 0) !== allIds.length) {
-      throw new Error("One or more tasks no longer exist.");
-    }
+  if (error) {
+    throw new Error(error.message);
   }
 
-  const updates = [
-    ...payload.pending.map((id, index) => ({
-      id,
-      board_column: boardColumnToDbColumn("pending"),
-      sort_order: index,
-    })),
-    ...payload.inProgress.map((id, index) => ({
-      id,
-      board_column: boardColumnToDbColumn("inProgress"),
-      sort_order: index,
-    })),
-  ];
-
-  for (const update of updates) {
-    const { error } = await admin
-      .from("admin_todos")
-      .update({
-        board_column: update.board_column,
-        sort_order: update.sort_order,
-      })
-      .eq("id", update.id);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-  }
+  await logAdminAction({
+    actorId: currentUser.id,
+    action: "admin_todo.sync_board",
+    entityType: "admin_todo_board",
+    metadata: {
+      pendingCount: payload.pending.length,
+      inProgressCount: payload.inProgress.length,
+    },
+  });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/app/lib/supabase/server";
 import { parseScreenshotRemoteUrl } from "@/app/lib/projects/project-utils";
+import { assertMaxLength, INPUT_LIMITS } from "@/app/lib/security/input-limits";
 
 type UpdateProjectBody = {
   name?: string;
@@ -41,6 +42,15 @@ export async function PATCH(
       { error: "Name and tagline are required." },
       { status: 400 },
     );
+  }
+
+  try {
+    assertMaxLength(name, INPUT_LIMITS.projectName, "Name");
+    assertMaxLength(tagline, INPUT_LIMITS.projectTagline, "Tagline");
+    assertMaxLength(description, INPUT_LIMITS.projectDescription, "Description");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid project data.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const { data, error } = await supabase

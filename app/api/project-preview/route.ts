@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { fetchProjectMeta } from "@/app/lib/fetch-project-meta";
 import { normalizeProjectInputUrl } from "@/app/lib/projects/project-utils";
+import { enforceRateLimit } from "@/app/lib/security/enforce-rate-limit";
+import { PUBLIC_API_RATE_LIMITS } from "@/app/lib/security/rate-limit";
+import { assertSafeExternalUrl } from "@/app/lib/security/safe-url";
 
 export async function POST(request: Request) {
+  const rateLimited = enforceRateLimit(
+    request,
+    "project-preview",
+    PUBLIC_API_RATE_LIMITS.projectPreview.limit,
+    PUBLIC_API_RATE_LIMITS.projectPreview.windowMs,
+  );
+  if (rateLimited) return rateLimited;
+
   let body: { url?: string };
 
   try {
@@ -20,11 +31,13 @@ export async function POST(request: Request) {
   }
 
   try {
+    await assertSafeExternalUrl(url);
     const meta = await fetchProjectMeta(url);
     return NextResponse.json(meta);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not fetch project data";
-    return NextResponse.json({ error: message }, { status: 422 });
+    const status = message.includes("not allowed") ? 400 : 422;
+    return NextResponse.json({ error: message }, { status });
   }
 }

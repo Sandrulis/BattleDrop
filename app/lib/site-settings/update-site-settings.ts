@@ -1,4 +1,7 @@
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { assertMaxLength } from "@/app/lib/security/input-limits";
+import { logAdminAction } from "@/app/lib/security/log-admin-action";
+import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 import {
   DEFAULT_SITE_SETTINGS,
   type DateFormatOrder,
@@ -44,7 +47,15 @@ export function normalizeSiteSettings(input: UpdateSiteSettingsInput): SiteSetti
 }
 
 export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
+  const currentUser = await getCurrentAppUser();
+  if (!currentUser?.is_admin) {
+    throw new Error("Admin access required.");
+  }
+
   const settings = normalizeSiteSettings(input);
+  assertMaxLength(settings.siteName, 120, "Site name");
+  assertMaxLength(settings.siteSlogan, 200, "Site slogan");
+
   const admin = createAdminClient();
 
   const { data, error } = await admin
@@ -63,6 +74,18 @@ export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
   if (error) {
     throw new Error(error.message);
   }
+
+  await logAdminAction({
+    actorId: currentUser.id,
+    action: "site_settings.update",
+    entityType: "site_settings",
+    entityId: "1",
+    metadata: {
+      siteName: settings.siteName,
+      dateFormat: settings.dateFormat,
+      timeFormat: settings.timeFormat,
+    },
+  });
 
   return {
     siteName: data.site_name,

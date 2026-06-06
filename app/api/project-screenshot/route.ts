@@ -1,27 +1,42 @@
 import { NextResponse } from "next/server";
-
-function isValidUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+import { enforceRateLimit } from "@/app/lib/security/enforce-rate-limit";
+import { PUBLIC_API_RATE_LIMITS } from "@/app/lib/security/rate-limit";
+import { assertSafeExternalHttpUrl } from "@/app/lib/security/safe-url";
 
 export async function GET(request: Request) {
+  const rateLimited = enforceRateLimit(
+    request,
+    "project-screenshot",
+    PUBLIC_API_RATE_LIMITS.projectScreenshot.limit,
+    PUBLIC_API_RATE_LIMITS.projectScreenshot.windowMs,
+  );
+  if (rateLimited) return rateLimited;
+
   const { searchParams } = new URL(request.url);
   const pageUrl = searchParams.get("url");
   const src = searchParams.get("src");
 
-  if (!pageUrl || !isValidUrl(pageUrl)) {
+  if (!pageUrl) {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
   }
 
-  const imageSrc =
-    src && (src.startsWith("https://") || src.startsWith("http://"))
-      ? src
-      : `https://image.thum.io/get/width/1280/noanimate/${pageUrl}`;
+  try {
+    await assertSafeExternalHttpUrl(pageUrl);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid URL";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  let imageSrc: string;
+
+  try {
+    imageSrc = src
+      ? await assertSafeExternalHttpUrl(src)
+      : `https://image.thum.io/get/width/1280/noanimate/${encodeURIComponent(pageUrl)}`;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid URL";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 
   try {
     const response = await fetch(imageSrc, {

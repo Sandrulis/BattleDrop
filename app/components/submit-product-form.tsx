@@ -170,24 +170,27 @@ export function SubmitProductForm({
     if (!draft) return;
 
     autoSaveStarted.current = true;
-    setUrl(draft.url);
-    setFetchUrl(draft.fetchUrl);
-    setName(draft.name);
-    setTagline(draft.tagline);
-    setDescription(draft.description);
-    setFavicon(draft.favicon);
-    setScreenshotUrl(draft.screenshotUrl);
-    setStep(2);
-    setSaving(true);
 
-    void saveProject(draft)
-      .then(handleSaveResult)
-      .catch(() => {
-        showToast("Could not save project. Try again.", "error");
-      })
-      .finally(() => {
-        setSaving(false);
-      });
+    void Promise.resolve().then(() => {
+      setUrl(draft.url);
+      setFetchUrl(draft.fetchUrl);
+      setName(draft.name);
+      setTagline(draft.tagline);
+      setDescription(draft.description);
+      setFavicon(draft.favicon);
+      setScreenshotUrl(draft.screenshotUrl);
+      setStep(2);
+      setSaving(true);
+
+      return saveProject(draft)
+        .then(handleSaveResult)
+        .catch(() => {
+          showToast("Could not save project. Try again.", "error");
+        })
+        .finally(() => {
+          setSaving(false);
+        });
+    });
   }, [isSignedIn, isEditing]);
 
   const handleUrlSubmit = async (e: React.FormEvent) => {
@@ -209,26 +212,28 @@ export function SubmitProductForm({
     setLoading(true);
 
     try {
-      const checkResponse = await fetch(
-        `/api/projects/check-url?url=${encodeURIComponent(normalizedUrl)}`,
-      );
-      const checkData = (await checkResponse.json()) as {
-        blocked?: boolean;
-        message?: string | null;
-        error?: string;
-      };
-
-      if (!checkResponse.ok) {
-        showToast(checkData.error ?? "Could not validate project URL.", "error");
-        return;
-      }
-
-      if (checkData.blocked) {
-        showToast(
-          checkData.message ?? "This project is already in the database.",
-          "error",
+      if (isSignedIn) {
+        const checkResponse = await fetch(
+          `/api/projects/check-url?url=${encodeURIComponent(normalizedUrl)}`,
         );
-        return;
+        const checkData = (await checkResponse.json()) as {
+          blocked?: boolean;
+          message?: string | null;
+          error?: string;
+        };
+
+        if (!checkResponse.ok) {
+          showToast(checkData.error ?? "Could not validate project URL.", "error");
+          return;
+        }
+
+        if (checkData.blocked) {
+          showToast(
+            checkData.message ?? "This project is already in the database.",
+            "error",
+          );
+          return;
+        }
       }
 
       const response = await fetch("/api/project-preview", {

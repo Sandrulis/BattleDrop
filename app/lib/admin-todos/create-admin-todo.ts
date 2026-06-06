@@ -1,5 +1,7 @@
 import type { AdminTodoTask } from "@/app/lib/admin-todos/admin-todo-types";
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { assertMaxLength, INPUT_LIMITS } from "@/app/lib/security/input-limits";
+import { logAdminAction } from "@/app/lib/security/log-admin-action";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 
 export async function createAdminTodo(
@@ -10,6 +12,9 @@ export async function createAdminTodo(
   if (!currentUser?.is_admin) {
     throw new Error("Admin access required.");
   }
+
+  assertMaxLength(title, INPUT_LIMITS.todoTitle, "Title");
+  assertMaxLength(description, INPUT_LIMITS.todoDescription, "Description");
 
   const admin = createAdminClient();
   const { data: lastTask, error: lastTaskError } = await admin
@@ -40,6 +45,14 @@ export async function createAdminTodo(
   if (error || !data) {
     throw new Error(error?.message ?? "Could not create task.");
   }
+
+  await logAdminAction({
+    actorId: currentUser.id,
+    action: "admin_todo.create",
+    entityType: "admin_todo",
+    entityId: data.id,
+    metadata: { title: data.title },
+  });
 
   return {
     id: data.id,
