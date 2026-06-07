@@ -2,41 +2,92 @@
 
 import { useEffect, useState } from "react";
 import {
+  BATTLE_WEEK_STATUS_BADGE,
+  formatBattleStartHoursLabel,
+  resolveBattleWeekDisplayStatus,
+  type BattleWeekDisplayStatus,
+  type BattleWeekTiming,
+} from "../lib/battle-week-status";
+import {
   COUNTDOWN_PLACEHOLDER,
   getCountdown,
+  getCountdownTo,
   type CountdownState,
 } from "../lib/countdown";
 import { formatBattleWeekRange } from "../lib/battle-week";
+import { formatDisplayPoints } from "../lib/site-settings/format-display-money";
 import type { Battle } from "../lib/types";
 import { useSiteDateSettings } from "./site-date-settings-provider";
 
 type BattleHeroProps = {
   battle: Battle;
+  battleStartHoursFromWeekStart: number;
+  submitPrice: number;
+  timing: BattleWeekTiming;
 };
 
-export function BattleHero({ battle }: BattleHeroProps) {
-  const dateSettings = useSiteDateSettings();
-  const isVoting = battle.phase === "voting";
-  const filled = battle.projectsSubmitted >= battle.projectsRequired;
+type BattleHeroCountdown = {
+  status: BattleWeekDisplayStatus;
+  weekStartCountdown: CountdownState | null;
+  votingCountdown: CountdownState | null;
+};
 
-  // null until mount — avoids SSR/client Date.now() hydration mismatch
-  const [countdown, setCountdown] = useState<CountdownState | null>(null);
+export function BattleHero({
+  battle,
+  battleStartHoursFromWeekStart,
+  submitPrice,
+  timing,
+}: BattleHeroProps) {
+  const dateSettings = useSiteDateSettings();
+  const minProjectsMet =
+    battle.minProjectsEnabled &&
+    battle.projectsSubmitted >= battle.projectsRequired;
+
+  const [state, setState] = useState<BattleHeroCountdown>({
+    status: "upcoming",
+    weekStartCountdown: null,
+    votingCountdown: null,
+  });
 
   useEffect(() => {
-    if (!isVoting) return;
-
     const tick = () => {
-      setCountdown(getCountdown(battle.votingOpensAt, battle.votingEndsAt));
+      const status = resolveBattleWeekDisplayStatus(new Date(), timing);
+      let weekStartCountdown: CountdownState | null = null;
+      let votingCountdown: CountdownState | null = null;
+
+      if (status === "upcoming") {
+        weekStartCountdown = getCountdownTo(timing.weekStart);
+        votingCountdown = getCountdownTo(timing.votingOpensAt);
+      } else if (status === "awaiting_voting") {
+        const totalMs =
+          new Date(timing.votingOpensAt).getTime() -
+          new Date(timing.weekStart).getTime();
+        votingCountdown = getCountdownTo(timing.votingOpensAt, { totalMs });
+      } else if (status === "voting_open") {
+        votingCountdown = getCountdown(timing.votingOpensAt, timing.votingEndsAt);
+      }
+
+      setState({ status, weekStartCountdown, votingCountdown });
     };
 
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [battle.votingOpensAt, battle.votingEndsAt, isVoting]);
+  }, [timing]);
 
-  const progressPercent = countdown
-    ? Math.round(countdown.remainingRatio * 100)
+  const badge = BATTLE_WEEK_STATUS_BADGE[state.status];
+  const showProjectProgress =
+    battle.minProjectsEnabled &&
+    !minProjectsMet &&
+    state.status !== "closed";
+  const showStandardFooter = !showProjectProgress;
+  const showVotingProgressBar = state.status === "voting_open";
+  const progressPercent = state.votingCountdown
+    ? Math.round(state.votingCountdown.remainingRatio * 100)
     : 0;
+  const battleStartHoursLabel = formatBattleStartHoursLabel(
+    battleStartHoursFromWeekStart,
+  );
 
   return (
     <section
@@ -51,6 +102,9 @@ export function BattleHero({ battle }: BattleHeroProps) {
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
               Week {battle.week}, {battle.year}
+              <span className="ml-2 text-lg font-medium text-zinc-500 sm:text-xl">
+                · {formatDisplayPoints(submitPrice)} per submit
+              </span>
             </h1>
             <p className="mt-1 text-sm text-zinc-500">
               {formatBattleWeekRange(battle.week, battle.year, dateSettings)}
@@ -59,30 +113,20 @@ export function BattleHero({ battle }: BattleHeroProps) {
 
           <div className="flex flex-col items-end gap-2">
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                isVoting
-                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                  : "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${badge.containerClass}`}
             >
               <span
-                className={`h-1.5 w-1.5 rounded-full ${isVoting ? "animate-pulse bg-emerald-500" : "bg-amber-500"}`}
+                className={`h-1.5 w-1.5 rounded-full ${badge.dotClass}`}
               />
-              {isVoting ? "Voting open" : "Collecting projects"}
+              {badge.label}
             </span>
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          <StatPill label="Tier" value="Week → Month → Year" />
-          <StatPill label="Entry" value="€5 or 5 points" />
-          <StatPill label="Month leader" value={battle.monthChampion} />
-        </div>
-
-        {!filled && (
+        {showProjectProgress && (
           <div className="mt-5">
             <div className="mb-2 flex justify-between text-xs font-medium text-zinc-600">
-              <span>Battle starts at 20 projects</span>
+              <span>Battle starts at {battle.projectsRequired} projects</span>
               <span>
                 {battle.projectsSubmitted}/{battle.projectsRequired}
               </span>
@@ -98,28 +142,68 @@ export function BattleHero({ battle }: BattleHeroProps) {
           </div>
         )}
 
-        {filled && isVoting && (
+        {showStandardFooter && (
           <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
+          {state.status === "upcoming" ? (
             <p className="text-xs text-zinc-500">
-              Voting opened 24h after battle start · Sign in with Google to vote
+              Week starts in{" "}
+              <span
+                className="font-mono font-semibold tabular-nums text-zinc-700"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {state.weekStartCountdown?.label ?? COUNTDOWN_PLACEHOLDER}
+              </span>
+              {" · "}Voting opens{" "}
+              <span className="font-semibold text-zinc-700">
+                {battleStartHoursLabel}
+              </span>{" "}
+              after week start
             </p>
+          ) : state.status === "closed" ? (
+            <p className="text-xs text-zinc-500">This battle week has ended</p>
+          ) : (
+            <p className="text-xs text-zinc-500">
+              Voting opens{" "}
+              <span className="font-semibold text-zinc-700">
+                {battleStartHoursLabel}
+              </span>{" "}
+              after battle start · Sign in with Google to vote
+            </p>
+          )}
+
+          {state.status === "closed" ? (
             <div className="ml-auto text-right">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-                {countdown?.isEnded ? "Voting closed" : "Voting ends in"}
+                Voting closed
+              </p>
+              <p className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">
+                Voting ended
+              </p>
+            </div>
+          ) : (
+            <div className="ml-auto text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                {state.status === "upcoming" || state.status === "awaiting_voting"
+                  ? "Voting opens in"
+                  : state.votingCountdown?.isEnded
+                    ? "Voting closed"
+                    : "Voting ends in"}
               </p>
               <p
                 className="mt-0.5 font-mono text-lg font-semibold tabular-nums tracking-tight text-zinc-900 sm:text-xl"
                 aria-live="polite"
                 aria-atomic="true"
               >
-                {countdown?.label ?? COUNTDOWN_PLACEHOLDER}
+                {state.votingCountdown?.label ?? COUNTDOWN_PLACEHOLDER}
               </p>
             </div>
+          )}
           </div>
         )}
       </div>
 
-      {filled && isVoting && (
+      {showVotingProgressBar && (
         <div
           className="h-1.5 w-full bg-zinc-100"
           role="progressbar"
@@ -135,16 +219,5 @@ export function BattleHero({ battle }: BattleHeroProps) {
         </div>
       )}
     </section>
-  );
-}
-
-function StatPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-        {label}
-      </p>
-      <p className="text-sm font-medium text-zinc-800">{value}</p>
-    </div>
   );
 }

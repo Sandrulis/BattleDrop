@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchProjectMeta } from "@/app/lib/fetch-project-meta";
-import { normalizeProjectInputUrl } from "@/app/lib/projects/project-utils";
+import { normalizeProjectSubmitUrl } from "@/app/lib/projects/project-utils";
 import { enforceRateLimit } from "@/app/lib/security/enforce-rate-limit";
 import { PUBLIC_API_RATE_LIMITS } from "@/app/lib/security/rate-limit";
 import { assertSafeExternalUrl } from "@/app/lib/security/safe-url";
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const url = body.url ? normalizeProjectInputUrl(body.url) : null;
+  const url = body.url ? normalizeProjectSubmitUrl(body.url) : null;
   if (!url) {
     return NextResponse.json(
       { error: "Enter a valid project URL." },

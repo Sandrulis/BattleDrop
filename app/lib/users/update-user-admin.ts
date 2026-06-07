@@ -18,7 +18,7 @@ export async function updateUserAdminStatus(
     .update({ is_admin: isAdmin })
     .eq("id", userId)
     .select(
-      "id, email, full_name, avatar_url, is_admin, created_at, updated_at, last_seen, date_format, time_format, date_separator",
+      "id, email, full_name, avatar_url, is_admin, created_at, updated_at, last_seen, date_format, time_format, date_separator, currency, points",
     )
     .single();
 

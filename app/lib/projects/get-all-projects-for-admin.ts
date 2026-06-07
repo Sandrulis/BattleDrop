@@ -28,7 +28,7 @@ export async function getAllProjectsForAdmin(): Promise<AdminProject[]> {
   const { data, error } = await admin
     .from("projects")
     .select(
-      "id, user_id, url, fetch_url, name, tagline, description, favicon_url, screenshot_url, status, created_at, updated_at, deleted_at, users ( full_name, email )",
+      "id, user_id, url, fetch_url, name, tagline, description, favicon_url, screenshot_url, status, battle_year, battle_iso_week, created_at, updated_at, deleted_at, users ( full_name, email )",
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false });

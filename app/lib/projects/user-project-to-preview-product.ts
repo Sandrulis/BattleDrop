@@ -35,6 +35,7 @@ export function userProjectToPreviewProduct(
     url: displayUrlFromProjectUrl(project.url),
     logo: project.name.charAt(0).toUpperCase() || "?",
     logoBg: logoBgFromName(project.name),
+    faviconUrl: project.favicon_url,
     topics: [],
     maker: makerName,
     votes: 0,

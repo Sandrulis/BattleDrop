@@ -3,7 +3,7 @@ import {
   isProjectUrlInDatabase,
   PROJECT_ALREADY_IN_DB_MESSAGE,
 } from "@/app/lib/projects/find-existing-project-by-url";
-import { normalizeProjectInputUrl } from "@/app/lib/projects/project-utils";
+import { normalizeProjectSubmitUrl } from "@/app/lib/projects/project-utils";
 import { enforceRateLimit } from "@/app/lib/security/enforce-rate-limit";
 import { PUBLIC_API_RATE_LIMITS } from "@/app/lib/security/rate-limit";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const rawUrl = searchParams.get("url")?.trim();
   const excludeProjectId = searchParams.get("excludeProjectId") ?? undefined;
-  const url = rawUrl ? normalizeProjectInputUrl(rawUrl) : null;
+  const url = rawUrl ? normalizeProjectSubmitUrl(rawUrl) : null;
 
   if (!url) {
     return NextResponse.json({ error: "Invalid URL." }, { status: 400 });

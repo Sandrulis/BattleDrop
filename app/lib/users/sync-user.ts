@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { resolveAvatarUrl } from "@/app/lib/users/resolve-avatar-url";
 
 function profileFromAuthUser(authUser: User) {
   const now = new Date().toISOString();
@@ -7,7 +8,7 @@ function profileFromAuthUser(authUser: User) {
   return {
     email: authUser.email ?? null,
     full_name: (authUser.user_metadata?.full_name as string | undefined) ?? null,
-    avatar_url: (authUser.user_metadata?.avatar_url as string | undefined) ?? null,
+    avatar_url: resolveAvatarUrl(null, authUser.user_metadata),
     updated_at: now,
     last_seen: now,
   };

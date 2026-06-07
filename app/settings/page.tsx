@@ -5,6 +5,7 @@ import { SiteHeader } from "@/app/components/site-header";
 import { SiteFooter } from "@/app/components/site-footer";
 import { UserSettingsForm } from "@/app/components/user-settings-form";
 import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
+import { resolveEffectiveCurrency } from "@/app/lib/site-settings/resolve-effective-currency-settings";
 import { resolveEffectiveDateTimeSettings } from "@/app/lib/site-settings/resolve-effective-date-time-settings";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
     dateFormat: user.date_format,
     timeFormat: user.time_format,
     dateSeparator: user.date_separator,
+    currency: user.currency,
   };
 
   const effectiveSettings = resolveEffectiveDateTimeSettings(
@@ -32,6 +34,11 @@ export default async function SettingsPage() {
       timeFormat: siteSettings.timeFormat,
       dateSeparator: siteSettings.dateSeparator,
     },
+    preferences,
+  );
+
+  const effectiveCurrency = resolveEffectiveCurrency(
+    siteSettings.defaultCurrency,
     preferences,
   );
 
@@ -51,6 +58,7 @@ export default async function SettingsPage() {
             <div className="mt-8">
               <UserSettingsForm
                 initialEffectiveSettings={effectiveSettings}
+                initialEffectiveCurrency={effectiveCurrency}
                 initialPreferences={preferences}
               />
             </div>

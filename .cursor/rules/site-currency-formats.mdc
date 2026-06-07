@@ -1,0 +1,96 @@
+---
+description: Site-wide and per-user currency display
+globs: app/**/*
+alwaysApply: false
+---
+
+# Site currency formats
+
+BattleDrop reads display currency from `public.site_settings.default_currency` (singleton row). Admins edit it at `/admin-panel/settings`. Signed-in users can override currency display at `/settings`.
+
+## Priority
+
+For `currency`:
+
+1. **User preference** — `public.users.currency` (nullable)
+2. **Site default** — `public.site_settings.default_currency` when the user value is `null`
+3. **Hardcoded fallback** — `DEFAULT_SITE_SETTINGS.defaultCurrency` in `app/lib/site-settings-types.ts`
+
+Merge with `resolveEffectiveCurrency()` in `app/lib/site-settings/resolve-effective-currency-settings.ts`.
+
+For the signed-in viewer, prefer `getEffectiveCurrencyForUser(userId)` in `app/lib/users/user-currency-preferences.ts`. Guests use site settings only.
+
+## Source of truth
+
+| Layer | What |
+|-------|------|
+| DB site | `default_currency` on `public.site_settings` |
+| DB user | `currency` (nullable) on `public.users` |
+| Server read site | `getSiteSettings()` in `app/lib/site-settings/get-site-settings.ts` |
+| Server read user | `getUserCurrencyPreference()` / `currency` on `getCurrentAppUser()` |
+| Types & low-level formatters | `app/lib/site-settings-types.ts` |
+| App helpers | `app/lib/site-settings/format-display-money.ts` |
+| User API | `PATCH /api/user-settings` (auth required; includes `currency`) |
+| Admin API | `PATCH /api/site-settings` (admin only; includes `defaultCurrency`) |
+
+## Never hardcode currency symbols
+
+```typescript
+// BAD — bypasses site/user settings
+`€${amount}`
+"$5.00"
+```
+
+## Always use site formatters
+
+```typescript
+// Server components / route handlers
+import { getEffectiveCurrencyForUser } from "@/app/lib/users/user-currency-preferences";
+import { formatDisplayMoney, formatDisplayMoneyWithPoints } from "@/app/lib/site-settings/format-display-money";
+
+const currency = await getEffectiveCurrencyForUser(userId);
+formatDisplayMoney(submitPrice, currency);
+formatDisplayMoneyWithPoints(submitPrice, currency);
+```
+
+```typescript
+// Client components — read from context (root layout merges user + site)
+import { useSiteCurrency } from "@/app/components/site-currency-settings-provider";
+import { formatDisplayMoneyWithPoints } from "@/app/lib/site-settings/format-display-money";
+
+const currency = useSiteCurrency();
+formatDisplayMoneyWithPoints(5, currency);
+```
+
+Root layout passes **effective** currency (user override applied) into `SiteCurrencySettingsProvider`.
+
+## Function guide
+
+| Function | Use when |
+|----------|----------|
+| `resolveEffectiveCurrency(siteDefault, userPrefs?)` | Merge user + site currency |
+| `getEffectiveCurrencyForUser(userId)` | Server: resolved currency for one viewer |
+| `formatDisplayMoney(amount, currency?)` | Format a numeric amount with symbol |
+| `formatDisplayMoneyWithPoints(amount, currency?)` | Entry fee style: `"€5.00 or 5 points"` |
+| `getCurrencySymbol(currency)` | Symbol only (admin inputs, labels) |
+| `formatSiteMoney(amount, currency)` | Low-level formatter in `site-settings-types.ts` |
+
+Optional `currency` falls back to `DEFAULT_SITE_SETTINGS.defaultCurrency`.
+
+## After changing currency
+
+- Admin: `PATCH /api/site-settings` calls `revalidateTag("site-settings")`.
+- User: `PATCH /api/user-settings` then `router.refresh()` on the settings form so layout reloads provider values.
+
+## Settings pages
+
+| Route | Who | Editable |
+|-------|-----|----------|
+| `/admin-panel/settings` | Admin | Site default currency (`defaultCurrency`) |
+| `/settings` | Signed-in user | Personal currency override (`currency`; null = site default) |
+
+## Amounts vs currency
+
+- `battle_submit_price` and `battle_week_settings.submit_price` store numeric amounts only.
+- Currency is display-only; amounts are interpreted in the site billing currency.
+- Admin battle-week UI uses **site** default currency, not the admin's personal override.

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
+import { SiteCurrencySettingsProvider } from "@/app/components/site-currency-settings-provider";
 import { SiteDateSettingsProvider } from "@/app/components/site-date-settings-provider";
 import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
+import { getEffectiveCurrencyForUser } from "@/app/lib/users/user-currency-preferences";
 import { getEffectiveDateTimeSettingsForUser } from "@/app/lib/users/user-date-time-preferences";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 
@@ -41,13 +43,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentAppUser();
-  const dateSettings = await getEffectiveDateTimeSettingsForUser(user?.id ?? null);
+  const [dateSettings, currency] = await Promise.all([
+    getEffectiveDateTimeSettingsForUser(user?.id ?? null),
+    getEffectiveCurrencyForUser(user?.id ?? null),
+  ]);
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
       <body className="flex min-h-full flex-col bg-[#f6f4ef] font-sans text-zinc-900 antialiased">
         <SiteDateSettingsProvider settings={dateSettings}>
-          {children}
+          <SiteCurrencySettingsProvider currency={currency}>
+            {children}
+          </SiteCurrencySettingsProvider>
         </SiteDateSettingsProvider>
       </body>
     </html>

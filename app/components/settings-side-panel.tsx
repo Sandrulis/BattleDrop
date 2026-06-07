@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UserAvatar } from "@/app/components/user-avatar";
 import { formatDisplayDate, formatLastSeen } from "@/app/lib/site-settings/format-display-date";
 import { resolveEffectiveDateTimeSettings } from "@/app/lib/site-settings/resolve-effective-date-time-settings";
 import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
@@ -30,18 +31,12 @@ export async function SettingsSidePanel({ user }: SettingsSidePanelProps) {
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-zinc-900">Your account</h3>
         <div className="mt-3 flex items-center gap-3">
-          {user.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={user.avatar_url}
-              alt=""
-              className="h-10 w-10 rounded-lg object-cover"
-            />
-          ) : (
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-200 text-sm font-medium text-zinc-700">
-              {displayName.charAt(0).toUpperCase()}
-            </span>
-          )}
+          <UserAvatar
+            src={user.avatar_url}
+            name={displayName}
+            imgClassName="h-10 w-10 rounded-lg object-cover"
+            fallbackClassName="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-200 text-sm font-medium text-zinc-700"
+          />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-zinc-900">{displayName}</p>
             <p className="truncate text-xs text-zinc-500">{user.email}</p>

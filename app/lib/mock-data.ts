@@ -1,11 +1,15 @@
+import { getCurrentIsoWeek } from "./battle-week";
 import type { Battle, Product, PromotedSlot } from "./types";
 
+const currentIsoWeek = getCurrentIsoWeek();
+
 export const currentBattle: Battle = {
-  week: 12,
-  year: 2026,
+  week: currentIsoWeek.week,
+  year: currentIsoWeek.year,
   phase: "voting",
   projectsSubmitted: 15,
   projectsRequired: 20,
+  minProjectsEnabled: false,
   votingOpensAt: "2026-06-03T12:00:00Z",
   votingEndsAt: "2026-06-07T12:00:00Z",
   monthChampion: "April — Flowstate",

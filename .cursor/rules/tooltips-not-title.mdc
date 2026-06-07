@@ -1,0 +1,47 @@
+---
+description: Use custom tooltips instead of the HTML title attribute for hover hints
+globs: app/**/*
+alwaysApply: false
+---
+
+# Tooltips — never use `title`
+
+Do **not** use the native HTML `title` attribute for hover hints anywhere in the UI.
+
+```tsx
+// BAD — native browser tooltip
+<button title="Disabled">…</button>
+<span title={`Minimum ${count} projects`}>…</span>
+```
+
+Native `title` tooltips are inconsistent across browsers/OS, delay awkwardly, cannot be styled, and are poor for touch.
+
+## Use a custom tooltip instead
+
+Use the shared `Tooltip` component in `app/components/tooltip.tsx`:
+
+```tsx
+import { Tooltip } from "@/app/components/tooltip";
+
+<Tooltip label="Disabled" className="h-7 items-center text-amber-700">
+  <i className="fas fa-poo text-[12px]" aria-hidden />
+</Tooltip>
+```
+
+Do not copy raw tooltip markup — extend `Tooltip` if global behavior or styling must change.
+
+## Still allowed
+
+| Use | OK? |
+|-----|-----|
+| `aria-label` on icon-only buttons | Yes — accessibility name, not a hover tooltip |
+| React prop named `title` (e.g. `AdminPanelSection title=`) | Yes — page/section heading, not HTML `title` |
+| `<title>` in SVG | Yes — graphics metadata |
+| Next.js `metadata.title` | Yes — document title |
+
+## When adding hover help
+
+1. Wrap the trigger in a `group/…` container with `relative` and `cursor-help` when appropriate.
+2. Render tooltip text in a child with `role="tooltip"`.
+3. Show on `group-hover` and `group-focus-within`.
+4. Do not add `title="…"` on the same element.

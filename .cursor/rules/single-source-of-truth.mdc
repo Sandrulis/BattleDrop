@@ -1,0 +1,51 @@
+---
+description: One canonical helper per business rule — avoid duplicate logic in app/
+alwaysApply: true
+---
+
+# Single source of truth (app/)
+
+When changing battle, pricing, formatting, or status behavior, update **one** canonical module — never copy logic into pages or components.
+
+## Battle week (current display week)
+
+| Need | Use |
+|------|-----|
+| Full context for home, sidebar, submit | `getHomeBattleWeek()` → `HomeBattleWeek` |
+| Week enabled, min projects, submit price | `resolveEffectiveWeekSettings()` in `get-battle-week-settings-for-year.ts` |
+| DB row → settings object | `mapBattleWeekSettingsRow()` in `map-battle-week-settings-row.ts` |
+| ISO week math | `battle-week.ts` |
+| Timing, status, badges, shuffle gate | `battle-week-status.ts` (`getBattleWeekTiming`, `resolveBattleWeekDisplayStatus`, `shouldShuffleBeforeVoting`, `displayStatusToBattlePhase`, `formatBattleStartHoursLabel`) |
+| Leaderboard order / shuffle | `build-leaderboard.ts` (`prepareProductFeedOrder`, `buildLeaderboard`, `buildLeaderboardInFixedOrder`) |
+
+```typescript
+// BAD — site default only, ignores per-week settings
+const { battleSubmitPrice } = await getSiteSettings();
+
+// GOOD — same week + price + min projects as home hero
+const homeBattleWeek = await getHomeBattleWeek();
+```
+
+Never hardcode `20 projects`, `24h`, or site-only prices in UI when `getHomeBattleWeek()` exists.
+
+## Formatting
+
+| Need | Use |
+|------|-----|
+| Points label (`1 point` / `5 points`) | `formatDisplayPoints()` |
+| Points numeric input value | `formatPointsAmount()` |
+| Money | `formatDisplayMoney()` |
+| Money + points | `formatDisplayMoneyWithPoints()` |
+| Dates / times | `format-display-date.ts` + user/site merge helpers |
+
+See also `site-currency-formats.mdc` and `site-date-time-formats.mdc`.
+
+## Before adding logic
+
+1. Search `app/lib/` for an existing helper.
+2. Extend the canonical function if the rule belongs there.
+3. Pass `HomeBattleWeek` (or a typed slice) into components — do not re-fetch or re-derive the same fields in multiple places.
+
+## SSR + random order
+
+Shuffle on the **server** (`prepareProductFeedOrder` in `page.tsx`), pass the snapshot to client components. Never `Math.random()` in client `useState` for initial render order.

@@ -1,0 +1,104 @@
+---
+description: Site-wide and per-user date and time formatting
+globs: app/**/*
+alwaysApply: false
+---
+
+# Site date & time formats
+
+BattleDrop reads display defaults from `public.site_settings` (singleton row). Admins edit them at `/admin-panel/settings`. Signed-in users can override date/time display at `/settings` (not site name or slogan).
+
+## Priority
+
+For each of `dateFormat`, `timeFormat`, and `dateSeparator`:
+
+1. **User preference** — `public.users.date_format`, `time_format`, `date_separator` (nullable)
+2. **Site default** — `public.site_settings` when the user value is `null`
+3. **Hardcoded fallback** — `DEFAULT_SITE_SETTINGS` in `app/lib/site-settings-types.ts`
+
+Merge with `resolveEffectiveDateTimeSettings()` in `app/lib/site-settings/resolve-effective-date-time-settings.ts`.
+
+For the signed-in viewer, prefer `getEffectiveDateTimeSettingsForUser(userId)` in `app/lib/users/user-date-time-preferences.ts`. Guests use site settings only.
+
+## Source of truth
+
+| Layer | What |
+|-------|------|
+| DB site | `site_name`, `site_slogan`, `date_format`, `time_format`, `date_separator` |
+| DB user | `date_format`, `time_format`, `date_separator` (all nullable) |
+| Server read site | `getSiteSettings()` in `app/lib/site-settings/get-site-settings.ts` |
+| Server read user | `getUserDateTimePreferences()` / fields on `getCurrentAppUser()` |
+| Types & low-level formatters | `app/lib/site-settings-types.ts` |
+| App helpers | `app/lib/site-settings/format-display-date.ts` |
+| User API | `PATCH /api/user-settings` (auth required; date/time only) |
+| Admin API | `PATCH /api/site-settings` (admin only) |
+
+## Never use locale formatters for user-visible dates
+
+```typescript
+// BAD — bypasses site/user settings
+new Date(value).toLocaleString()
+new Date(value).toLocaleDateString()
+```
+
+## Always use site formatters
+
+```typescript
+// Server components / route handlers
+import { getEffectiveDateTimeSettingsForUser } from "@/app/lib/users/user-date-time-preferences";
+import {
+  formatDisplayDate,
+  formatDisplayDateTime,
+  formatLastSeen,
+} from "@/app/lib/site-settings/format-display-date";
+
+const settings = await getEffectiveDateTimeSettingsForUser(userId);
+formatDisplayDateTime(user.last_seen, settings);
+formatDisplayDate(project.created_at, settings);
+```
+
+```typescript
+// Client components — read from context (root layout merges user + site)
+import { useSiteDateSettings } from "@/app/components/site-date-settings-provider";
+import { formatBattleWeekRange } from "@/app/lib/battle-week";
+
+const dateSettings = useSiteDateSettings();
+formatBattleWeekRange(week, year, dateSettings);
+```
+
+Root layout passes **effective** settings (user overrides applied) into `SiteDateSettingsProvider`.
+
+## Function guide
+
+| Function | Use when |
+|----------|----------|
+| `resolveEffectiveDateTimeSettings(site, userPrefs?)` | Merge user + site date/time fields |
+| `getEffectiveDateTimeSettingsForUser(userId)` | Server: resolved settings for one viewer |
+| `formatDisplayDateTime(iso, settings?)` | Date + time (timestamps) |
+| `formatDisplayDate(iso, settings?)` | Date only (saved / updated) |
+| `formatLastSeen(iso, settings?)` | Relative (< 1 min → seconds, < 1 h → minutes, < 1 d → hours, < 1 w → days; else date) |
+| `formatSiteDate(date, settings)` | `Date` object, date part only |
+| `formatSiteDateTime(date, settings)` | `Date` object, date + time |
+| `formatBattleWeekRange(week, year, settings)` | ISO week range on home hero |
+
+Optional `settings` falls back to `DEFAULT_SITE_SETTINGS`.
+
+## After changing formats
+
+- Admin: `PATCH /api/site-settings` calls `revalidateTag("site-settings")`.
+- User: `PATCH /api/user-settings` then `router.refresh()` on the settings form so layout reloads provider values.
+
+## Settings pages
+
+| Route | Who | Editable |
+|-------|-----|----------|
+| `/admin-panel/settings` | Admin | Site name, slogan, date/time defaults |
+| `/settings` | Signed-in user | Date/time only; account info in side panel |
+
+## Exceptions
+
+- Copyright year in footer: `new Date().getFullYear()` is fine
+- Archive month section headers (`JUNE`): month name labels, not full dates
+- Internal storage / APIs: keep ISO-8601 (`toISOString()`)
+
+When showing a timestamp **for a specific user** (e.g. last seen in admin), resolve that user's effective settings — not the viewer's and not site-only.

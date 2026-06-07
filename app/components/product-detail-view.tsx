@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Product, ProductComment } from "../lib/types";
 import { CommentThread } from "./comment-thread";
 import { ProductDetailSidebar } from "./product-detail-sidebar";
+import { ProjectLogo } from "./project-logo";
 import { VoteButton } from "./vote-comment-buttons";
 
 type ProductDetailViewProps = {
@@ -51,23 +52,13 @@ export function ProductDetailView({
           <div className="grid grid-cols-[auto_1fr_auto] items-start gap-4 rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6">
             <VoteButton count={voteCount} voted={voted} onClick={toggleVote} />
             <div className="flex min-w-0 gap-4">
-              {logoImageUrl ? (
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-sm">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={logoImageUrl}
-                    alt=""
-                    className="h-12 w-12 object-contain"
-                  />
-                </div>
-              ) : (
-                <div
-                  className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-2xl font-bold text-white shadow-sm"
-                  style={{ backgroundColor: product.logoBg }}
-                >
-                  {product.logo}
-                </div>
-              )}
+              <ProjectLogo
+                name={product.name}
+                faviconUrl={logoImageUrl ?? product.faviconUrl}
+                logo={product.logo}
+                logoBg={product.logoBg}
+                size="lg"
+              />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">

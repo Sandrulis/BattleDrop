@@ -6,7 +6,7 @@ import { AuthButton } from "@/app/components/auth-button";
 import { signInWithGoogle } from "@/app/lib/auth/sign-in-with-google";
 import { Toast, useToast } from "@/app/components/toast";
 import type { ProjectPreviewMeta } from "@/app/lib/fetch-project-meta";
-import { normalizeProjectInputUrl } from "@/app/lib/projects/project-utils";
+import { normalizeProjectSubmitUrl } from "@/app/lib/projects/project-utils";
 import type { EditProjectData } from "@/app/lib/types";
 
 const PENDING_DRAFT_KEY = "battle-drop:pending-submit-draft";
@@ -79,7 +79,7 @@ export function SubmitProductForm({
   const autoSaveStarted = useRef(false);
 
   const buildDraft = (): PendingSubmitDraft => {
-    const normalizedUrl = normalizeProjectInputUrl(url) ?? url.trim();
+    const normalizedUrl = normalizeProjectSubmitUrl(url) ?? url.trim();
 
     return {
       url: normalizedUrl,
@@ -202,7 +202,7 @@ export function SubmitProductForm({
       return;
     }
 
-    const normalizedUrl = normalizeProjectInputUrl(trimmed);
+    const normalizedUrl = normalizeProjectSubmitUrl(trimmed);
     if (!normalizedUrl) {
       showToast("Enter a valid project URL.", "error");
       return;

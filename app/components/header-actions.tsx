@@ -24,6 +24,10 @@ export function HeaderActions({
   useEffect(() => {
     if (!navOpen && !userMenuOpen) return;
 
+    const isMobile = !window.matchMedia("(min-width: 768px)").matches;
+    const shouldLockScroll = navOpen || (userMenuOpen && isMobile);
+    if (!shouldLockScroll) return;
+
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";

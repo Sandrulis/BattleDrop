@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/app/lib/supabase/server";
 import { getProjectSaveEligibility } from "@/app/lib/projects/get-project-save-eligibility";
 import {
-  normalizeProjectInputUrl,
+  normalizeProjectSubmitUrl,
   parseScreenshotRemoteUrl,
 } from "@/app/lib/projects/project-utils";
 import { assertMaxLength, INPUT_LIMITS } from "@/app/lib/security/input-limits";
@@ -35,10 +35,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const url = body.url ? normalizeProjectInputUrl(body.url) : null;
-  const fetchUrl = body.fetchUrl
-    ? normalizeProjectInputUrl(body.fetchUrl)
-    : url;
+  const url = body.url ? normalizeProjectSubmitUrl(body.url) : null;
+  const fetchUrl = body.fetchUrl ? normalizeProjectSubmitUrl(body.fetchUrl) : url;
   const name = body.name?.trim();
   const tagline = body.tagline?.trim();
   const description = body.description?.trim() ?? "";

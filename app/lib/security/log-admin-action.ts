@@ -2,6 +2,7 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 
 export type AdminAuditAction =
   | "site_settings.update"
+  | "battle_week_settings.update"
   | "user.admin.update"
   | "admin_todo.create"
   | "admin_todo.update"

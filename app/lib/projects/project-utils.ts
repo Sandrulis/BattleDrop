@@ -17,6 +17,21 @@ export function normalizeProjectInputUrl(rawUrl: string): string | null {
   }
 }
 
+/** Public landing page (site root) — not app subpaths like /dashboard. */
+export function resolveProjectLandingUrl(rawUrl: string): string {
+  const url = new URL(rawUrl.trim());
+  url.hash = "";
+  url.search = "";
+  url.pathname = "/";
+  return url.href;
+}
+
+export function normalizeProjectSubmitUrl(rawUrl: string): string | null {
+  const normalized = normalizeProjectInputUrl(rawUrl);
+  if (!normalized) return null;
+  return resolveProjectLandingUrl(normalized);
+}
+
 export function normalizeProjectHost(rawUrl: string) {
   const url = new URL(rawUrl.trim());
   let hostname = url.hostname.toLowerCase();

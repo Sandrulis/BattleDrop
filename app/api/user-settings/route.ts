@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
 import { resolveEffectiveDateTimeSettings } from "@/app/lib/site-settings/resolve-effective-date-time-settings";
+import { resolveEffectiveCurrency } from "@/app/lib/site-settings/resolve-effective-currency-settings";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
+import {
+  normalizeUserCurrencyPreferenceInput,
+  updateUserCurrencyPreference,
+  type UserCurrencyPreferenceInput,
+} from "@/app/lib/users/user-currency-preferences";
 import {
   normalizeUserDateTimePreferencesInput,
   updateUserDateTimePreferences,
   type UserDateTimePreferencesInput,
 } from "@/app/lib/users/user-date-time-preferences";
+
+type UserSettingsPatchBody = UserDateTimePreferencesInput &
+  UserCurrencyPreferenceInput;
 
 export async function GET() {
   const user = await getCurrentAppUser();
@@ -16,21 +25,31 @@ export async function GET() {
   }
 
   const siteSettings = await getSiteSettings();
-  const preferences = {
+  const dateTimePreferences = {
     dateFormat: user.date_format,
     timeFormat: user.time_format,
     dateSeparator: user.date_separator,
   };
+  const currencyPreference = {
+    currency: user.currency,
+  };
 
   return NextResponse.json({
-    preferences,
+    preferences: {
+      ...dateTimePreferences,
+      ...currencyPreference,
+    },
     effective: resolveEffectiveDateTimeSettings(
       {
         dateFormat: siteSettings.dateFormat,
         timeFormat: siteSettings.timeFormat,
         dateSeparator: siteSettings.dateSeparator,
       },
-      preferences,
+      dateTimePreferences,
+    ),
+    effectiveCurrency: resolveEffectiveCurrency(
+      siteSettings.defaultCurrency,
+      currencyPreference,
     ),
   });
 }
@@ -42,7 +61,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
 
-  let body: UserDateTimePreferencesInput;
+  let body: UserSettingsPatchBody;
 
   try {
     body = await request.json();
@@ -52,17 +71,42 @@ export async function PATCH(request: Request) {
 
   try {
     const siteSettings = await getSiteSettings();
-    const preferences = await updateUserDateTimePreferences(user.id, body);
+    const hasDateTimeFields =
+      body.dateFormat !== undefined ||
+      body.timeFormat !== undefined ||
+      body.dateSeparator !== undefined;
+
+    const dateTimePreferences = hasDateTimeFields
+      ? await updateUserDateTimePreferences(user.id, body)
+      : {
+          dateFormat: user.date_format,
+          timeFormat: user.time_format,
+          dateSeparator: user.date_separator,
+        };
+
+    const currencyPreference =
+      body.currency !== undefined
+        ? await updateUserCurrencyPreference(user.id, body)
+        : { currency: user.currency };
+
+    const normalizedCurrency = normalizeUserCurrencyPreferenceInput(currencyPreference);
 
     return NextResponse.json({
-      preferences: normalizeUserDateTimePreferencesInput(preferences),
+      preferences: {
+        ...normalizeUserDateTimePreferencesInput(dateTimePreferences),
+        ...normalizedCurrency,
+      },
       effective: resolveEffectiveDateTimeSettings(
         {
           dateFormat: siteSettings.dateFormat,
           timeFormat: siteSettings.timeFormat,
           dateSeparator: siteSettings.dateSeparator,
         },
-        preferences,
+        dateTimePreferences,
+      ),
+      effectiveCurrency: resolveEffectiveCurrency(
+        siteSettings.defaultCurrency,
+        normalizedCurrency,
       ),
     });
   } catch (error) {

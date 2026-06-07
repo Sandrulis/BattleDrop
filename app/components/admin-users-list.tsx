@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { AdminUserAdminToggle } from "@/app/components/admin-user-admin-toggle";
+import { PointsBalanceLink } from "@/app/components/points-balance-link";
 import { Toast, useToast } from "@/app/components/toast";
+import { UserAvatar } from "@/app/components/user-avatar";
 import type { AppUser } from "@/app/lib/types";
 import { formatLastSeen } from "@/app/lib/site-settings/format-display-date";
 import { resolveEffectiveDateTimeSettings } from "@/app/lib/site-settings/resolve-effective-date-time-settings";
@@ -44,7 +46,6 @@ export function AdminUsersList({
       <ul className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
         {users.map((user, index) => {
           const displayName = user.full_name?.trim() || user.email || "Unknown user";
-          const initial = displayName.charAt(0).toUpperCase();
           const isSelf = user.id === currentUserId;
           const cannotDemoteSelf = isSelf && user.is_admin;
           const userDateSettings = resolveEffectiveDateTimeSettings(siteDateSettings, {
@@ -62,18 +63,12 @@ export function AdminUsersList({
             >
               <div className="relative size-[3.625rem] shrink-0">
                 <div className="size-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
-                  {user.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={user.avatar_url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-zinc-500">
-                      {initial}
-                    </span>
-                  )}
+                  <UserAvatar
+                    src={user.avatar_url}
+                    name={displayName}
+                    imgClassName="h-full w-full object-cover"
+                    fallbackClassName="flex h-full w-full items-center justify-center text-sm font-semibold text-zinc-500"
+                  />
                 </div>
                 {user.is_admin && (
                   <span className="group/admin-badge absolute -right-1 -top-1 flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-[#da552f] text-[8px] text-white shadow-sm ring-2 ring-white">
@@ -100,17 +95,22 @@ export function AdminUsersList({
                 </p>
               </div>
 
-              <AdminUserAdminToggle
-                userId={user.id}
-                isAdmin={user.is_admin}
-                disabled={cannotDemoteSelf}
-                disabledReason={
-                  cannotDemoteSelf ? "You cannot remove your own admin access." : undefined
-                }
-                onChange={(isAdmin) => handleAdminChange(user.id, isAdmin)}
-                onError={(message) => showToast(message, "error")}
-                onSuccess={() => showToast("Admin status updated.", "success")}
-              />
+              <div className="flex shrink-0 items-center gap-3">
+                <PointsBalanceLink points={user.points} variant="display" />
+                <AdminUserAdminToggle
+                  userId={user.id}
+                  isAdmin={user.is_admin}
+                  disabled={cannotDemoteSelf}
+                  disabledReason={
+                    cannotDemoteSelf
+                      ? "You cannot remove your own admin access."
+                      : undefined
+                  }
+                  onChange={(isAdmin) => handleAdminChange(user.id, isAdmin)}
+                  onError={(message) => showToast(message, "error")}
+                  onSuccess={() => showToast("Admin status updated.", "success")}
+                />
+              </div>
             </li>
           );
         })}

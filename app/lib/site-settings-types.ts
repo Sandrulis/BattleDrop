@@ -1,6 +1,7 @@
 export type DateFormatOrder = "ymd" | "dmy" | "mdy";
 export type TimeFormat = "24h" | "12h";
 export type DateSeparator = "." | "/" | "-" | " ";
+export type CurrencyCode = "EUR" | "USD" | "GBP";
 
 export type SiteSettings = {
   siteName: string;
@@ -8,6 +9,9 @@ export type SiteSettings = {
   dateFormat: DateFormatOrder;
   timeFormat: TimeFormat;
   dateSeparator: DateSeparator;
+  defaultCurrency: CurrencyCode;
+  battleSubmitPrice: number;
+  battleStartHoursFromWeekStart: number;
 };
 
 export type SiteDateTimeSettings = Pick<
@@ -21,6 +25,9 @@ export type SiteSettingsRow = {
   date_format: DateFormatOrder;
   time_format: TimeFormat;
   date_separator: DateSeparator;
+  default_currency: CurrencyCode;
+  battle_submit_price: number;
+  battle_start_hours_from_week_start: number;
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -29,7 +36,39 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   dateFormat: "ymd",
   timeFormat: "24h",
   dateSeparator: ".",
+  defaultCurrency: "EUR",
+  battleSubmitPrice: 5,
+  battleStartHoursFromWeekStart: 96,
 };
+
+const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
+  EUR: "€",
+  USD: "$",
+  GBP: "£",
+};
+
+export const CURRENCY_OPTIONS: {
+  value: CurrencyCode;
+  label: string;
+  symbol: string;
+}[] = [
+  { value: "EUR", label: "Euro (EUR)", symbol: "€" },
+  { value: "USD", label: "US Dollar (USD)", symbol: "$" },
+  { value: "GBP", label: "British Pound (GBP)", symbol: "£" },
+];
+
+export function isCurrencyCode(value: unknown): value is CurrencyCode {
+  return value === "EUR" || value === "USD" || value === "GBP";
+}
+
+export function getCurrencySymbol(currency: CurrencyCode) {
+  return CURRENCY_SYMBOLS[currency];
+}
+
+export function formatSiteMoney(amount: number, currency: CurrencyCode) {
+  const formatted = Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
+  return `${getCurrencySymbol(currency)}${formatted}`;
+}
 
 export const DATE_FORMAT_OPTIONS: {
   value: DateFormatOrder;

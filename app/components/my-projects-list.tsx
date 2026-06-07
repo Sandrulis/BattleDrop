@@ -2,11 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { DeleteProjectModal } from "@/app/components/delete-project-modal";
+import {
+  PublishProjectModal,
+  type PublishBattleWeekInfo,
+} from "@/app/components/publish-project-modal";
+import { PromoteProjectModal } from "@/app/components/promote-project-modal";
 import { Toast, useToast } from "@/app/components/toast";
 import { buildScreenshotProxyUrl } from "@/app/lib/projects/project-utils";
+import type { BookedPromotedSlot } from "@/app/lib/promoted-slots/types";
 import type { UserProject } from "@/app/lib/types";
+import {
+  buildBuyPointsPath,
+  INSUFFICIENT_POINTS_STATUS,
+} from "@/app/lib/users/buy-points-path";
 
 function statusLabel(status: UserProject["status"]) {
   if (status === "draft") return "Draft";
@@ -17,15 +27,61 @@ function statusLabel(status: UserProject["status"]) {
 const actionButtonClassName =
   "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50";
 
-type MyProjectsListProps = {
-  projects: UserProject[];
+type PublishedBattleWeekLabel = {
+  week: number;
+  year: number;
+  weekRangeLabel: string;
 };
 
-export function MyProjectsList({ projects }: MyProjectsListProps) {
+type MyProjectsListProps = {
+  projects: UserProject[];
+  inCurrentBattleWeekByProjectId: Record<string, boolean>;
+  publishedBattleWeekByProjectId: Record<string, PublishedBattleWeekLabel>;
+  promotedSlots: BookedPromotedSlot[];
+  publishBattleWeek: PublishBattleWeekInfo;
+  userHasPublishedForTargetWeek: boolean;
+  userPointsBalance: number;
+};
+
+export function MyProjectsList({
+  projects,
+  inCurrentBattleWeekByProjectId,
+  publishedBattleWeekByProjectId,
+  promotedSlots,
+  publishBattleWeek,
+  userHasPublishedForTargetWeek,
+  userPointsBalance,
+}: MyProjectsListProps) {
   const router = useRouter();
   const { toast, showToast, dismissToast } = useToast();
   const [deleteTarget, setDeleteTarget] = useState<UserProject | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [publishTarget, setPublishTarget] = useState<UserProject | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [promoteTarget, setPromoteTarget] = useState<UserProject | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
+  const [promoting, setPromoting] = useState(false);
+
+  const promotedByProjectId = new Map(
+    promotedSlots.map((slot) => [slot.projectId, slot]),
+  );
+  const bookedSpots = promotedSlots.map((slot) => slot.spot);
+
+  const redirectToBuyPoints = useCallback(() => {
+    setPublishTarget(null);
+    setPromoteTarget(null);
+    setSelectedSpot(null);
+    router.push(buildBuyPointsPath("/my-projects"));
+  }, [router]);
+
+  const openPublishModal = (project: UserProject) => {
+    if (userPointsBalance < publishBattleWeek.submitPrice) {
+      router.push(buildBuyPointsPath("/my-projects"));
+      return;
+    }
+
+    setPublishTarget(project);
+  };
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -53,6 +109,82 @@ export function MyProjectsList({ projects }: MyProjectsListProps) {
     }
   };
 
+  const confirmPublish = async () => {
+    if (!publishTarget) return;
+
+    setPublishing(true);
+
+    try {
+      const response = await fetch(`/api/projects/${publishTarget.id}/publish`, {
+        method: "POST",
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        redirectTo?: string;
+      };
+
+      if (!response.ok) {
+        if (response.status === INSUFFICIENT_POINTS_STATUS) {
+          redirectToBuyPoints();
+          return;
+        }
+
+        showToast(data.error ?? "Could not publish project.", "error");
+        return;
+      }
+
+      setPublishTarget(null);
+      showToast(
+        publishBattleWeek.appliesToNextWeek
+          ? `Project submitted for week ${publishBattleWeek.week}, ${publishBattleWeek.year}.`
+          : "Project published for this week's battle.",
+        "success",
+      );
+      router.refresh();
+    } catch {
+      showToast("Could not publish project.", "error");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const confirmPromote = async () => {
+    if (!promoteTarget || selectedSpot === null) return;
+
+    setPromoting(true);
+
+    try {
+      const response = await fetch(`/api/projects/${promoteTarget.id}/promote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spot: selectedSpot }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        redirectTo?: string;
+      };
+
+      if (!response.ok) {
+        if (response.status === INSUFFICIENT_POINTS_STATUS) {
+          redirectToBuyPoints();
+          return;
+        }
+
+        showToast(data.error ?? "Could not promote project.", "error");
+        return;
+      }
+
+      setPromoteTarget(null);
+      setSelectedSpot(null);
+      showToast("Project promoted on this week's leaderboard.", "success");
+      router.refresh();
+    } catch {
+      showToast("Could not promote project.", "error");
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   if (projects.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
@@ -77,6 +209,13 @@ export function MyProjectsList({ projects }: MyProjectsListProps) {
           const screenshotSrc = project.screenshot_url
             ? buildScreenshotProxyUrl(project.fetch_url, project.screenshot_url)
             : null;
+          const inCurrentBattleWeek =
+            inCurrentBattleWeekByProjectId[project.id] ?? false;
+          const promotedSlot = promotedByProjectId.get(project.id);
+          const publishedBattleWeek =
+            publishedBattleWeekByProjectId[project.id] ?? null;
+          const showPublishButton =
+            project.status === "draft" && !userHasPublishedForTargetWeek;
 
           return (
             <li
@@ -109,7 +248,15 @@ export function MyProjectsList({ projects }: MyProjectsListProps) {
                         <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
                           {statusLabel(project.status)}
                         </span>
+                        {promotedSlot ? (
+                          <span className="promoted-badge">Promoted</span>
+                        ) : null}
                       </div>
+                      {publishedBattleWeek ? (
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {publishedBattleWeek.weekRangeLabel}
+                        </p>
+                      ) : null}
                       <p className="mt-1 line-clamp-2 text-sm text-zinc-600">
                         {project.tagline}
                       </p>
@@ -151,18 +298,45 @@ export function MyProjectsList({ projects }: MyProjectsListProps) {
                               <i className="fa-solid fa-eye text-[11px]" aria-hidden />
                               Preview
                             </Link>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                showToast("Publish flow coming soon.")
-                              }
-                              className={`${actionButtonClassName} border-[#da552f]/20 text-[#da552f] hover:bg-[#da552f]/5`}
-                            >
-                              <i className="fa-solid fa-rocket text-[11px]" aria-hidden />
-                              Publish
-                            </button>
+                            {showPublishButton ? (
+                              <button
+                                type="button"
+                                onClick={() => openPublishModal(project)}
+                                className={`${actionButtonClassName} border-[#da552f]/20 text-[#da552f] hover:bg-[#da552f]/5`}
+                              >
+                                <i className="fa-solid fa-rocket text-[11px]" aria-hidden />
+                                Publish
+                              </button>
+                            ) : null}
                           </>
                         )}
+                        {project.status === "published" && publishedBattleWeek ? (
+                          <span
+                            className={`${actionButtonClassName} cursor-default border-[#da552f]/20 bg-[#da552f]/5 text-[#da552f]`}
+                          >
+                            <i
+                              className="fa-solid fa-calendar-days text-[11px]"
+                              aria-hidden
+                            />
+                            Week {publishedBattleWeek.week},{" "}
+                            {publishedBattleWeek.year}
+                          </span>
+                        ) : null}
+                        {project.status === "published" &&
+                        inCurrentBattleWeek &&
+                        !promotedSlot ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPromoteTarget(project);
+                              setSelectedSpot(null);
+                            }}
+                            className={`${actionButtonClassName} border-amber-300/80 bg-amber-50 text-amber-800 hover:bg-amber-100`}
+                          >
+                            <i className="fa-solid fa-bullhorn text-[11px]" aria-hidden />
+                            Promote
+                          </button>
+                        ) : null}
                       </div>
                     </div>
 
@@ -192,6 +366,37 @@ export function MyProjectsList({ projects }: MyProjectsListProps) {
           if (!deleting) setDeleteTarget(null);
         }}
         onConfirm={confirmDelete}
+      />
+
+      <PublishProjectModal
+        projectName={publishTarget?.name ?? ""}
+        battleWeek={publishBattleWeek}
+        userPointsBalance={userPointsBalance}
+        open={Boolean(publishTarget)}
+        loading={publishing}
+        onCancel={() => {
+          if (!publishing) setPublishTarget(null);
+        }}
+        onConfirm={confirmPublish}
+        onInsufficientPoints={redirectToBuyPoints}
+      />
+
+      <PromoteProjectModal
+        projectName={promoteTarget?.name ?? ""}
+        bookedSpots={bookedSpots}
+        userPointsBalance={userPointsBalance}
+        open={Boolean(promoteTarget)}
+        loading={promoting}
+        selectedSpot={selectedSpot}
+        onSelectSpot={setSelectedSpot}
+        onCancel={() => {
+          if (!promoting) {
+            setPromoteTarget(null);
+            setSelectedSpot(null);
+          }
+        }}
+        onConfirm={confirmPromote}
+        onInsufficientPoints={redirectToBuyPoints}
       />
 
       <Toast toast={toast} onDismiss={dismissToast} />

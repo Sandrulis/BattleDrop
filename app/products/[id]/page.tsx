@@ -3,19 +3,26 @@ import { notFound } from "next/navigation";
 import { ProductDetailView } from "../../components/product-detail-view";
 import { SiteFooter } from "../../components/site-footer";
 import { SiteHeader } from "../../components/site-header";
+import { getPublishedProjectProduct } from "@/app/lib/projects/get-published-project-product";
+import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
 import { getProductComments } from "../../lib/product-comments";
 import { getProductById } from "../../lib/mock-data";
-import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
 
 type ProductPageProps = {
   params: Promise<{ id: string }>;
 };
 
+async function resolveProduct(id: string) {
+  const publishedProduct = await getPublishedProjectProduct(id);
+  if (publishedProduct) return publishedProduct;
+  return getProductById(id);
+}
+
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await resolveProduct(id);
   if (!product) return { title: "Product" };
 
   return {
@@ -26,7 +33,7 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await resolveProduct(id);
 
   if (!product) notFound();
 

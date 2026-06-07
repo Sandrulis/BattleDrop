@@ -1,17 +1,23 @@
 import Link from "next/link";
 import { getSiteMonogram, getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
+import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 import { HeaderActions } from "./header-actions";
+import { UserPointsBalance } from "./user-points-balance";
 
 export async function SiteHeader() {
-  const [{ siteName }, supabase] = await Promise.all([
-    getSiteSettings(),
-    createClient(),
-  ]);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { siteName } = await getSiteSettings();
+  let user = null;
+
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    user = authUser;
+  }
+
   const appUser = user ? await getCurrentAppUser() : null;
   const monogram = getSiteMonogram(siteName);
 
@@ -61,6 +67,9 @@ export async function SiteHeader() {
           >
             Submit product
           </Link>
+          {appUser ? (
+            <UserPointsBalance points={appUser.points} />
+          ) : null}
           <HeaderActions
             user={user}
             isAdmin={appUser?.is_admin ?? false}

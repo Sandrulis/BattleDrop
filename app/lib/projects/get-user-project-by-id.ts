@@ -14,7 +14,7 @@ export async function getUserProjectById(
   const { data, error } = await supabase
     .from("projects")
     .select(
-      "id, user_id, url, fetch_url, name, tagline, description, favicon_url, screenshot_url, status, created_at, updated_at, deleted_at",
+      "id, user_id, url, fetch_url, name, tagline, description, favicon_url, screenshot_url, status, battle_year, battle_iso_week, created_at, updated_at, deleted_at",
     )
     .eq("id", projectId)
     .eq("user_id", user.id)

@@ -1,32 +1,44 @@
 "use client";
 
-
-
 import Link from "next/link";
-
-import { useMemo, useState } from "react";
-
-import { buildLeaderboard, type DisplayProduct } from "../lib/build-leaderboard";
-
+import { useEffect, useMemo, useState } from "react";
+import {
+  resolveBattleWeekDisplayStatus,
+  type BattleWeekTiming,
+} from "../lib/battle-week-status";
+import { buildLeaderboard, buildLeaderboardInFixedOrder, type DisplayProduct } from "../lib/build-leaderboard";
+import type { BookedPromotedSlot } from "@/app/lib/promoted-slots/types";
 import type { Product } from "../lib/types";
-
+import { ProjectLogo } from "./project-logo";
 import { CommentButton, VoteButton } from "./vote-comment-buttons";
 
-
-
 type ProductFeedProps = {
-
   initialProducts: Product[];
-
+  bookedPromotedSlots?: BookedPromotedSlot[];
+  shuffleBeforeVoting?: boolean;
+  timing: BattleWeekTiming;
 };
 
-
-
-export function ProductFeed({ initialProducts }: ProductFeedProps) {
-
+export function ProductFeed({
+  initialProducts,
+  bookedPromotedSlots = [],
+  shuffleBeforeVoting = false,
+  timing,
+}: ProductFeedProps) {
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
-
   const [voteDeltas, setVoteDeltas] = useState<Record<string, number>>({});
+  const [votingOpen, setVotingOpen] = useState(false);
+
+  useEffect(() => {
+    const tick = () => {
+      const status = resolveBattleWeekDisplayStatus(new Date(), timing);
+      setVotingOpen(status === "voting_open");
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [timing]);
 
 
 
@@ -42,13 +54,15 @@ export function ProductFeed({ initialProducts }: ProductFeedProps) {
 
 
 
-    return buildLeaderboard(withVotes);
-
-  }, [initialProducts, voteDeltas]);
+    return shuffleBeforeVoting
+      ? buildLeaderboardInFixedOrder(withVotes, bookedPromotedSlots)
+      : buildLeaderboard(withVotes, bookedPromotedSlots);
+  }, [initialProducts, voteDeltas, shuffleBeforeVoting, bookedPromotedSlots]);
 
 
 
   function toggleVote(id: string) {
+    if (!votingOpen) return;
 
     setVotedIds((prev) => {
 
@@ -85,39 +99,43 @@ export function ProductFeed({ initialProducts }: ProductFeedProps) {
         <h2 className="text-sm font-semibold text-zinc-900">This Week&apos;s leaderboard</h2>
 
         <p className="text-xs text-zinc-500">
-          {entries.length} projects · ranked by votes
-          <span className="text-zinc-400"> · sign in to vote</span>
+          {entries.length} projects
+          {shuffleBeforeVoting
+            ? " · order shuffled on refresh"
+            : " · ranked by votes"}
+          <span className="text-zinc-400">
+            {votingOpen ? " · sign in to vote" : " · voting opens soon"}
+          </span>
         </p>
 
       </div>
 
 
 
-      <ol className="flex flex-col gap-2">
-
-        {entries.map((entry) => (
-
-          <ProductRow
-
-            key={`${entry.product.id}-${entry.promoted ? "p" : "o"}-${entry.organicRank ?? entry.voteRank}`}
-
-            product={entry.product}
-
-            organicRank={entry.organicRank}
-
-            voteRank={entry.voteRank}
-
-            voted={votedIds.has(entry.product.id)}
-
-            onVote={() => toggleVote(entry.product.id)}
-
-            promoted={entry.promoted}
-
-          />
-
-        ))}
-
-      </ol>
+      {initialProducts.length === 0 ? (
+        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-14 text-center">
+          <p className="text-sm font-medium text-zinc-900">No projects yet</p>
+          <p className="mt-2 max-w-sm text-sm text-zinc-500">
+            The leaderboard is empty for now and waiting for this week&apos;s
+            submissions.
+          </p>
+        </div>
+      ) : (
+        <ol className="flex flex-col gap-2">
+          {entries.map((entry) => (
+            <ProductRow
+              key={`${entry.product.id}-${entry.promoted ? "p" : "o"}-${entry.organicRank ?? entry.voteRank}`}
+              product={entry.product}
+              organicRank={entry.organicRank}
+              voteRank={entry.voteRank}
+              voted={votedIds.has(entry.product.id)}
+              onVote={() => toggleVote(entry.product.id)}
+              votingOpen={votingOpen}
+              promoted={entry.promoted}
+            />
+          ))}
+        </ol>
+      )}
     </section>
 
   );
@@ -137,27 +155,18 @@ type ProductRowProps = {
   voted: boolean;
 
   onVote: () => void;
-
+  votingOpen: boolean;
   promoted?: boolean;
-
 };
 
-
-
 function ProductRow({
-
   product,
-
   organicRank,
-
   voteRank,
-
   voted,
-
   onVote,
-
+  votingOpen,
   promoted = false,
-
 }: ProductRowProps) {
 
   return (
@@ -178,7 +187,12 @@ function ProductRow({
 
     >
 
-      <VoteButton count={product.displayVotes} voted={voted} onClick={onVote} />
+      <VoteButton
+        count={product.displayVotes}
+        voted={voted}
+        onClick={onVote}
+        disabled={!votingOpen}
+      />
 
 
 
@@ -194,17 +208,12 @@ function ProductRow({
 
       >
 
-        <div
-
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-white shadow-sm sm:h-14 sm:w-14 sm:rounded-2xl sm:text-xl"
-
-          style={{ backgroundColor: product.logoBg }}
-
-        >
-
-          {product.logo}
-
-        </div>
+        <ProjectLogo
+          name={product.name}
+          faviconUrl={product.faviconUrl}
+          logo={product.logo}
+          logoBg={product.logoBg}
+        />
 
 
 

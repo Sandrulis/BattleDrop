@@ -432,9 +432,17 @@ export function AdminTodoBoard({
                 className="flex min-h-[360px] flex-col rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
               >
                 <div className="mb-4">
-                  <h2 className="text-sm font-semibold text-zinc-900">
-                    {column.label}
-                  </h2>
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-sm font-semibold text-zinc-900">
+                      {column.label}
+                    </h2>
+                    <span
+                      className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium tabular-nums text-zinc-600"
+                      aria-label={`${columnTasks.length} ${columnTasks.length === 1 ? "task" : "tasks"}`}
+                    >
+                      {columnTasks.length}
+                    </span>
+                  </div>
                   <p className="mt-1 text-xs text-zinc-500">
                     {column.description}
                   </p>

@@ -1,0 +1,74 @@
+---
+description: Shared loading spinner and page loading UI for route and async states
+globs: app/**/*
+alwaysApply: false
+---
+
+# Loading states
+
+While content loads, show the shared spinner — not skeleton placeholders, blank screens, or ad-hoc spinners.
+
+## Source of truth
+
+- Spinner: `LoadingSpinner` in `app/components/loading.tsx`
+- Content-area loading: `PageLoading` in `app/components/loading.tsx`
+- Route loading with shell: `SiteRouteLoading` in `app/components/loading.tsx`
+
+## Route loading (`loading.tsx`)
+
+Spinner goes in the **content area only** — keep `SiteHeader` and `SiteFooter` visible.
+
+**Standard routes** (no shared layout with header/footer):
+
+```typescript
+import { SiteRouteLoading } from "@/app/components/loading";
+
+export default function Loading() {
+  return <SiteRouteLoading />;
+}
+```
+
+**Admin panel routes** (`app/admin-panel/layout.tsx` already renders header, nav, footer):
+
+```typescript
+import { PageLoading } from "@/app/components/loading";
+
+export default function Loading() {
+  return <PageLoading />;
+}
+```
+
+Optional custom label: `<SiteRouteLoading label="Loading archive…" />`.
+
+## Suspense fallbacks
+
+```typescript
+import { PageLoading, LoadingSpinner } from "@/app/components/loading";
+
+// Full section
+<Suspense fallback={<PageLoading />}>
+
+// Inline (buttons, small panels)
+<Suspense fallback={<LoadingSpinner size="sm" />}>
+```
+
+## Button / action loading
+
+Disable the control and show `LoadingSpinner size="sm"` beside the label, or swap label to `"Loading…"`. Reuse `LoadingSpinner` — do not add one-off CSS spinners.
+
+## Avoid
+
+```typescript
+// BAD — skeleton route loaders
+export function HomeLoadingSkeleton() { ... }
+
+// BAD — custom spinners
+<div className="animate-spin border-4 ..." />
+
+// BAD — no feedback while navigating
+export default function Loading() {
+  return null;
+}
+```
+
+`Skeleton` / pulse placeholders are not used for loading states in this app.

@@ -23,15 +23,23 @@ export function VoteButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={voted}
-      aria-label={voted ? "Remove vote" : "Upvote"}
+      aria-label={
+        disabled
+          ? "Voting not open yet"
+          : voted
+            ? "Remove vote"
+            : "Upvote"
+      }
       className={`flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border-2 transition-all ${
-        disabled ? "cursor-not-allowed opacity-60" : "!cursor-pointer"
+        disabled ? "cursor-not-allowed opacity-50" : "!cursor-pointer"
       } ${
         compact ? "w-9 px-0.5 py-1.5" : "w-[52px] px-1 py-2 sm:w-[56px]"
       } ${
-        voted
-          ? "border-[#da552f] bg-[#da552f]/5 text-[#da552f]"
-          : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:border-[#da552f]/40 hover:bg-white"
+        disabled
+          ? "border-zinc-200 bg-zinc-50 text-zinc-400"
+          : voted
+            ? "border-[#da552f] bg-[#da552f]/5 text-[#da552f]"
+            : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:border-[#da552f]/40 hover:bg-white"
       } ${className}`}
     >
       <ChevronUp

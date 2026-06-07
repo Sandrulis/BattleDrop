@@ -1,4 +1,4 @@
-import { getMondayOfIsoWeek } from "./battle-week";
+import { getCurrentIsoWeek, getMondayOfIsoWeek } from "./battle-week";
 import { products } from "./mock-data";
 
 export type WeekStatus = "completed" | "active" | "upcoming";
@@ -24,7 +24,7 @@ export type WeekArchiveEntry = {
 
 export const ARCHIVE_YEARS = [2025, 2026] as const;
 export const DEFAULT_ARCHIVE_YEAR = 2026;
-export const CURRENT_BATTLE_WEEK = 12;
+export const CURRENT_BATTLE_WEEK = getCurrentIsoWeek().week;
 
 const EXTRA_CATALOG: Record<string, Omit<ArchiveWinnerProduct, "votes" | "comments">> = {
   Flowstate: {
@@ -153,7 +153,7 @@ function buildYear(
 
 const archiveByYear: Record<number, WeekArchiveEntry[]> = {
   2025: buildYear(2025, 52, null),
-  2026: buildYear(2026, 11, CURRENT_BATTLE_WEEK),
+  2026: buildYear(2026, CURRENT_BATTLE_WEEK - 1, CURRENT_BATTLE_WEEK),
 };
 
 export function getArchiveYearData(year: number): WeekArchiveEntry[] {

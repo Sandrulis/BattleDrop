@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { Toast, useToast } from "@/app/components/toast";
 import {
+  CURRENCY_OPTIONS,
   DATE_FORMAT_OPTIONS,
   DATE_SEPARATOR_OPTIONS,
   DEFAULT_ADMIN_SITE_SETTINGS,
   formatAdminPreviewDateTime,
+  getCurrencySymbol,
   TIME_FORMAT_OPTIONS,
   type AdminSiteSettings,
 } from "@/app/lib/admin-settings-options";
+import { formatSiteMoney } from "@/app/lib/site-settings-types";
 
 const inputClassName =
   "w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200";
@@ -65,7 +68,7 @@ export function AdminSettingsForm({ initialSettings }: AdminSettingsFormProps) {
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-sm font-semibold text-zinc-900">Site settings</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          Site name, slogan, and display defaults used across BattleDrop.
+          Site name, slogan, display defaults, and battle defaults used across BattleDrop.
         </p>
 
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -161,6 +164,95 @@ export function AdminSettingsForm({ initialSettings }: AdminSettingsFormProps) {
           </div>
         </div>
 
+        <div className="mt-8">
+          <h3 className="text-sm font-semibold text-zinc-900">Regional defaults</h3>
+          <p className="mt-1 text-sm text-zinc-500">
+            Default currency for prices shown across the site when users have not
+            set a personal preference.
+          </p>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="block sm:max-w-sm">
+              <span className="block text-sm font-medium text-zinc-900">
+                Default currency
+              </span>
+              <select
+                value={settings.defaultCurrency}
+                onChange={(e) =>
+                  updateSetting(
+                    "defaultCurrency",
+                    e.target.value as AdminSiteSettings["defaultCurrency"],
+                  )
+                }
+                className={`mt-1.5 ${inputClassName}`}
+              >
+                {CURRENCY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <h3 className="text-sm font-semibold text-zinc-900">Battle defaults</h3>
+          <p className="mt-1 text-sm text-zinc-500">
+            Default values applied to new weekly battles. Individual weeks can override
+            these later.
+          </p>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="block text-sm font-medium text-zinc-900">
+                Submit price
+              </span>
+              <div className="relative mt-1.5">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
+                  {getCurrencySymbol(settings.defaultCurrency)}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={settings.battleSubmitPrice}
+                  onChange={(e) =>
+                    updateSetting("battleSubmitPrice", Number(e.target.value))
+                  }
+                  className={`${inputClassName} pl-8`}
+                />
+              </div>
+              <p className="mt-1.5 text-sm text-zinc-500">
+                Entry fee charged for each project submission.
+              </p>
+            </label>
+
+            <label className="block">
+              <span className="block text-sm font-medium text-zinc-900">
+                Hours until battle starts
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={168}
+                step={1}
+                value={settings.battleStartHoursFromWeekStart}
+                onChange={(e) =>
+                  updateSetting(
+                    "battleStartHoursFromWeekStart",
+                    Number(e.target.value),
+                  )
+                }
+                className={`mt-1.5 ${inputClassName}`}
+              />
+              <p className="mt-1.5 text-sm text-zinc-500">
+                Hours after the ISO week begins (Monday 00:00) when the battle starts.
+              </p>
+            </label>
+          </div>
+        </div>
+
         <div className="mt-5 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
             Preview
@@ -172,6 +264,9 @@ export function AdminSettingsForm({ initialSettings }: AdminSettingsFormProps) {
             {settings.siteSlogan.trim() || DEFAULT_ADMIN_SITE_SETTINGS.siteSlogan}
           </p>
           <p className="mt-3 font-mono text-sm text-zinc-800">{datePreview}</p>
+          <p className="mt-2 font-mono text-sm text-zinc-800">
+            {formatSiteMoney(settings.battleSubmitPrice, settings.defaultCurrency)}
+          </p>
         </div>
 
         <div className="mt-5">

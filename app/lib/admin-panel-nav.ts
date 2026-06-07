@@ -27,8 +27,8 @@ export const ADMIN_PANEL_NAV: AdminPanelNavItem[] = [
     description: "Moderate submissions, drafts, and published products.",
   },
   {
-    href: "/admin-panel/battle-results",
-    label: "Battle Results",
+    href: "/admin-panel/battles",
+    label: "Battles",
     icon: "fa-trophy",
     description: "Review weekly, monthly, and annual battle outcomes.",
   },

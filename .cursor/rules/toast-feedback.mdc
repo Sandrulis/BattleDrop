@@ -1,0 +1,61 @@
+---
+description: User feedback via toast notifications with auto-dismiss and hover pause
+globs: app/**/*
+alwaysApply: false
+---
+
+# Toast feedback
+
+All user-facing action results (success, error, info) must use the shared toast — not `alert()`, browser dialogs, or ad-hoc banners.
+
+## Source of truth
+
+- Hook: `useToast()` in `app/components/toast.tsx`
+- UI: `<Toast toast={toast} onDismiss={dismissToast} />`
+- Default duration: `4000` ms (`DEFAULT_DURATION_MS`)
+
+## Show feedback
+
+```typescript
+import { Toast, useToast } from "@/app/components/toast";
+
+const { toast, showToast, dismissToast } = useToast();
+
+// success / error / default
+showToast("Settings saved.", "success");
+showToast("Could not save project.", "error");
+showToast("Publish flow coming soon.");
+```
+
+Render `<Toast>` once per client component that calls `showToast`.
+
+## Auto-dismiss & hover behavior
+
+- Toast auto-hides after `durationMs` (default 4 s).
+- Timer **pauses** while the pointer is over the toast (`onMouseEnter`).
+- Timer **resumes** when the pointer leaves (`onMouseLeave`); if no time remains, dismiss immediately.
+- Do not reimplement this logic — extend `Toast` / `useToast` if behavior must change globally.
+
+## Pointer & selection
+
+- Over the toast block, cursor is **default** (`cursor-default`), not text/I-beam.
+- Toast text is not selectable (`select-none`) — it is transient feedback, not copyable content.
+
+## Variants
+
+| Variant | Use when |
+|---------|----------|
+| `"success"` | Action completed |
+| `"error"` | Action failed or validation blocked submit |
+| `"default"` | Neutral info (e.g. coming soon) |
+
+## Avoid
+
+```typescript
+// BAD
+alert("Saved!");
+window.confirm("Delete?");
+<div className="fixed ...">Custom message</div>
+```
+
+Inline field errors next to inputs are fine for form validation; still use toast for submit/API outcomes.

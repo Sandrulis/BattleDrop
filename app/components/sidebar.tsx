@@ -2,23 +2,42 @@ import {
   hallOfFameEntries,
   hallOfFameMonth,
 } from "../lib/mock-data";
-import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
+import type { HomeBattleWeek } from "@/app/lib/battle-week-settings/get-home-battle-week";
+import { formatBattleStartHoursLabel } from "@/app/lib/battle-week-status";
+import {
+  formatDisplayPoints,
+} from "@/app/lib/site-settings/format-display-money";
 
-export async function Sidebar() {
-  const { siteName } = await getSiteSettings();
+type SidebarProps = {
+  homeBattleWeek: HomeBattleWeek;
+};
+
+export async function Sidebar({ homeBattleWeek }: SidebarProps) {
+  const { battle, battleStartHoursFromWeekStart, submitPrice } = homeBattleWeek;
+  const entryFeeLabel = formatDisplayPoints(submitPrice);
+  const battleStartHoursLabel = formatBattleStartHoursLabel(
+    battleStartHoursFromWeekStart,
+  );
 
   return (
     <aside className="flex flex-col gap-4">
       <div id="how" className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-zinc-900">How {siteName} works</h3>
+        <h3 className="text-sm font-semibold text-zinc-900">
+          This week&apos;s battle rules
+        </h3>
         <ol className="mt-3 space-y-3 text-xs leading-relaxed text-zinc-600">
           <li className="flex gap-2">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-700">
               1
             </span>
             <span>
-              Founders submit one product per week (€5 or 5 points). Battle
-              starts at 20 projects.
+              Each user can submit one product this week ({entryFeeLabel}).
+              {battle.minProjectsEnabled ? (
+                <>
+                  {" "}
+                  Battle starts at {battle.projectsRequired} projects.
+                </>
+              ) : null}
             </span>
           </li>
           <li className="flex gap-2">
@@ -26,13 +45,42 @@ export async function Sidebar() {
               2
             </span>
             <span>
-              Voting opens 24h after start. Anyone with a Google account can
-              vote.
+              Voting opens{" "}
+              <span className="font-semibold text-zinc-800">
+                {battleStartHoursLabel}
+              </span>{" "}
+              after week start.
             </span>
           </li>
           <li className="flex gap-2">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-700">
               3
+            </span>
+            <span>
+              Once voting has started, you can no longer add a project to this
+              week — apply for the next available week instead.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-700">
+              4
+            </span>
+            <span>
+              Anyone with a Google account can vote once per day.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-700">
+              5
+            </span>
+            <span>
+              Until voting opens, project order is shuffled on each page refresh
+              so no project gets a placement advantage.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-700">
+              6
             </span>
             <span>
               Weekly winner → monthly championship → December Grand Prix.

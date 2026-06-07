@@ -4,6 +4,8 @@ import { logAdminAction } from "@/app/lib/security/log-admin-action";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 import {
   DEFAULT_SITE_SETTINGS,
+  isCurrencyCode,
+  type CurrencyCode,
   type DateFormatOrder,
   type DateSeparator,
   type SiteSettings,
@@ -22,6 +24,35 @@ function isTimeFormat(value: unknown): value is TimeFormat {
 
 function isDateSeparator(value: unknown): value is DateSeparator {
   return value === "." || value === "/" || value === "-" || value === " ";
+}
+
+function parseNonNegativeNumber(value: unknown): number | null {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function parseBattleStartHours(value: unknown): number | null {
+  const parsed = parseNonNegativeNumber(value);
+  if (parsed === null) {
+    return null;
+  }
+
+  const hours = Math.round(parsed);
+  if (hours > 168) {
+    return null;
+  }
+
+  return hours;
 }
 
 export function normalizeSiteSettings(input: UpdateSiteSettingsInput): SiteSettings {
@@ -43,6 +74,15 @@ export function normalizeSiteSettings(input: UpdateSiteSettingsInput): SiteSetti
     dateSeparator: isDateSeparator(input.dateSeparator)
       ? input.dateSeparator
       : DEFAULT_SITE_SETTINGS.dateSeparator,
+    defaultCurrency: isCurrencyCode(input.defaultCurrency)
+      ? input.defaultCurrency
+      : DEFAULT_SITE_SETTINGS.defaultCurrency,
+    battleSubmitPrice:
+      parseNonNegativeNumber(input.battleSubmitPrice) ??
+      DEFAULT_SITE_SETTINGS.battleSubmitPrice,
+    battleStartHoursFromWeekStart:
+      parseBattleStartHours(input.battleStartHoursFromWeekStart) ??
+      DEFAULT_SITE_SETTINGS.battleStartHoursFromWeekStart,
   };
 }
 
@@ -66,9 +106,14 @@ export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
       date_format: settings.dateFormat,
       time_format: settings.timeFormat,
       date_separator: settings.dateSeparator,
+      default_currency: settings.defaultCurrency,
+      battle_submit_price: settings.battleSubmitPrice,
+      battle_start_hours_from_week_start: settings.battleStartHoursFromWeekStart,
     })
     .eq("id", 1)
-    .select("site_name, site_slogan, date_format, time_format, date_separator")
+    .select(
+      "site_name, site_slogan, date_format, time_format, date_separator, default_currency, battle_submit_price, battle_start_hours_from_week_start",
+    )
     .single();
 
   if (error) {
@@ -84,6 +129,9 @@ export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
       siteName: settings.siteName,
       dateFormat: settings.dateFormat,
       timeFormat: settings.timeFormat,
+      defaultCurrency: settings.defaultCurrency,
+      battleSubmitPrice: settings.battleSubmitPrice,
+      battleStartHoursFromWeekStart: settings.battleStartHoursFromWeekStart,
     },
   });
 
@@ -93,5 +141,8 @@ export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
     dateFormat: data.date_format as DateFormatOrder,
     timeFormat: data.time_format as TimeFormat,
     dateSeparator: data.date_separator as DateSeparator,
+    defaultCurrency: data.default_currency as CurrencyCode,
+    battleSubmitPrice: Number(data.battle_submit_price),
+    battleStartHoursFromWeekStart: data.battle_start_hours_from_week_start,
   } satisfies SiteSettings;
 }

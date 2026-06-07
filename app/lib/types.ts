@@ -1,6 +1,7 @@
 export type BattlePhase = "collecting" | "voting" | "closed";
 
 import type {
+  CurrencyCode,
   DateFormatOrder,
   DateSeparator,
   TimeFormat,
@@ -18,6 +19,8 @@ export type AppUser = {
   date_format: DateFormatOrder | null;
   time_format: TimeFormat | null;
   date_separator: DateSeparator | null;
+  currency: CurrencyCode | null;
+  points: number;
 };
 
 export type ProjectStatus = "draft" | "published" | "archived";
@@ -33,6 +36,8 @@ export type UserProject = {
   favicon_url: string | null;
   screenshot_url: string | null;
   status: ProjectStatus;
+  battle_year: number | null;
+  battle_iso_week: number | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -61,6 +66,7 @@ export type Product = {
   url: string;
   logo: string;
   logoBg: string;
+  faviconUrl?: string | null;
   topics: string[];
   maker: string;
   votes: number;
@@ -90,6 +96,7 @@ export type Battle = {
   phase: BattlePhase;
   projectsSubmitted: number;
   projectsRequired: number;
+  minProjectsEnabled: boolean;
   votingEndsAt: string;
   votingOpensAt: string;
   monthChampion: string;

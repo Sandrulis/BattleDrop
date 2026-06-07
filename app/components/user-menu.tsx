@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/app/lib/supabase/client";
+import { resolveAvatarUrl } from "@/app/lib/users/resolve-avatar-url";
+import { UserAvatar } from "@/app/components/user-avatar";
 
 type UserMenuProps = {
   user: User;
@@ -48,8 +50,7 @@ export function UserMenu({
     router.refresh();
   };
 
-  const resolvedAvatar =
-    avatarUrl ?? (user.user_metadata?.avatar_url as string | undefined);
+  const resolvedAvatar = resolveAvatarUrl(avatarUrl, user.user_metadata);
 
   const menuItems = (
     <>
@@ -100,21 +101,12 @@ export function UserMenu({
         aria-label="Account menu"
         className="cursor-pointer rounded-lg outline-none ring-offset-2 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400"
       >
-        {resolvedAvatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={resolvedAvatar}
-            alt=""
-            className="h-8 w-8 rounded-lg object-cover"
-          />
-        ) : (
-          <span
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-200 text-xs font-medium text-zinc-700"
-            aria-hidden
-          >
-            {displayName.charAt(0).toUpperCase()}
-          </span>
-        )}
+        <UserAvatar
+          src={resolvedAvatar}
+          name={displayName}
+          imgClassName="h-8 w-8 rounded-lg object-cover"
+          fallbackClassName="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-200 text-xs font-medium text-zinc-700"
+        />
       </button>
 
       {open && (

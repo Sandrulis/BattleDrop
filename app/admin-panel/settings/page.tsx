@@ -13,7 +13,7 @@ export default async function AdminSettingsPage() {
   return (
     <AdminPanelSection
       title="Settings"
-      description="Configure site name, slogan, and display defaults for dates and times."
+      description="Configure site identity, date and time display defaults, and battle defaults for new weekly battles."
     >
       <AdminSettingsForm initialSettings={settings} />
     </AdminPanelSection>
