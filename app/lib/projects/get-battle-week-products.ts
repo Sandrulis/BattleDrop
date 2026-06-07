@@ -22,6 +22,24 @@ type BattleWeekProjectRow = UserProject & {
   users: ProjectOwner | ProjectOwner[] | null;
 };
 
+type BattleWeekProjectRowInput = Omit<
+  UserProject,
+  "battle_year" | "battle_iso_week"
+> &
+  Partial<Pick<UserProject, "battle_year" | "battle_iso_week">> & {
+    users: ProjectOwner | ProjectOwner[] | null;
+  };
+
+function normalizeBattleWeekProject(
+  row: BattleWeekProjectRowInput,
+): BattleWeekProjectRow {
+  return {
+    ...row,
+    battle_year: row.battle_year ?? null,
+    battle_iso_week: row.battle_iso_week ?? null,
+  };
+}
+
 function resolveOwner(users: ProjectOwner | ProjectOwner[] | null): ProjectOwner {
   if (!users) return { full_name: null, email: null };
   return Array.isArray(users) ? (users[0] ?? { full_name: null, email: null }) : users;
@@ -34,7 +52,10 @@ export async function getBattleWeekProducts(
   const admin = createAdminClient();
   const { weekStart, weekEnd } = getBattleWeekCreatedAtBounds(year, week);
 
-  let { data, error } = await admin
+  let rows: BattleWeekProjectRowInput[] | null = null;
+  let error: { message: string } | null = null;
+
+  const primary = await admin
     .from("projects")
     .select(BATTLE_WEEK_PRODUCT_SELECT)
     .eq("status", "published")
@@ -42,20 +63,30 @@ export async function getBattleWeekProducts(
     .or(battleWeekProjectsOrFilter(year, week))
     .order("created_at", { ascending: true });
 
+  rows = primary.data as BattleWeekProjectRowInput[] | null;
+  error = primary.error;
+
   if (error && isMissingBattleWeekColumnError(error)) {
-    ({ data, error } = await admin
+    const legacy = await admin
       .from("projects")
       .select(LEGACY_BATTLE_WEEK_PRODUCT_SELECT)
       .eq("status", "published")
       .is("deleted_at", null)
       .gte("created_at", weekStart)
       .lt("created_at", weekEnd)
-      .order("created_at", { ascending: true }));
+      .order("created_at", { ascending: true });
+
+    rows = legacy.data as BattleWeekProjectRowInput[] | null;
+    error = legacy.error;
   }
 
-  if (error || !data) return [];
+  if (error || !rows) return [];
 
-  return (data as BattleWeekProjectRow[]).map((project, index) =>
-    projectToProduct(project, resolveOwner(project.users), index + 1),
+  return rows.map((project, index) =>
+    projectToProduct(
+      normalizeBattleWeekProject(project),
+      resolveOwner(project.users),
+      index + 1,
+    ),
   );
 }

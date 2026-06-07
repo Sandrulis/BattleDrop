@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PointsBalanceLink } from "@/app/components/points-balance-link";
 
 export type PublishBattleWeekInfo = {
@@ -23,45 +23,29 @@ type PublishProjectModalProps = {
   loading: boolean;
   onCancel: () => void;
   onConfirm: () => void;
-  onInsufficientPoints: () => void;
 };
 
 export function PublishProjectModal({
+  open,
+  ...props
+}: PublishProjectModalProps) {
+  if (!open) return null;
+
+  return <PublishProjectModalBody {...props} />;
+}
+
+function PublishProjectModalBody({
   projectName,
   battleWeek,
   userPointsBalance,
-  open,
   loading,
   onCancel,
   onConfirm,
-  onInsufficientPoints,
-}: PublishProjectModalProps) {
+}: Omit<PublishProjectModalProps, "open">) {
   const [acceptedRules, setAcceptedRules] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setAcceptedRules(false);
-    }
-  }, [open, projectName]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    if (userPointsBalance < battleWeek.submitPrice) {
-      onInsufficientPoints();
-    }
-  }, [
-    open,
-    userPointsBalance,
-    battleWeek.submitPrice,
-    onInsufficientPoints,
-  ]);
-
-  if (!open) return null;
 
   const handleCancel = () => {
     if (loading) return;
-    setAcceptedRules(false);
     onCancel();
   };
 

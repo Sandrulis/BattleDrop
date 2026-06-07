@@ -47,6 +47,8 @@ export async function getAllProjectsForAdmin(): Promise<AdminProject[]> {
       favicon_url: project.favicon_url,
       screenshot_url: project.screenshot_url,
       status: project.status,
+      battle_year: project.battle_year ?? null,
+      battle_iso_week: project.battle_iso_week ?? null,
       created_at: project.created_at,
       updated_at: project.updated_at,
       deleted_at: project.deleted_at,

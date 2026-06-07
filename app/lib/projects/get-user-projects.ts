@@ -27,23 +27,35 @@ export async function getUserProjects(): Promise<UserProject[]> {
 
   if (!user) return [];
 
-  let { data, error } = await supabase
+  type UserProjectRowInput = Omit<UserProject, "battle_year" | "battle_iso_week"> &
+    Partial<Pick<UserProject, "battle_year" | "battle_iso_week">>;
+
+  let rows: UserProjectRowInput[] | null = null;
+  let error: { message: string } | null = null;
+
+  const primary = await supabase
     .from("projects")
     .select(USER_PROJECT_SELECT)
     .eq("user_id", user.id)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
+  rows = primary.data as UserProjectRowInput[] | null;
+  error = primary.error;
+
   if (error && isMissingBattleWeekColumnError(error)) {
-    ({ data, error } = await supabase
+    const legacy = await supabase
       .from("projects")
       .select(LEGACY_USER_PROJECT_SELECT)
       .eq("user_id", user.id)
       .is("deleted_at", null)
-      .order("created_at", { ascending: false }));
+      .order("created_at", { ascending: false });
+
+    rows = legacy.data as UserProjectRowInput[] | null;
+    error = legacy.error;
   }
 
-  if (error || !data) return [];
+  if (error || !rows) return [];
 
-  return data.map((row) => normalizeUserProject(row));
+  return rows.map((row) => normalizeUserProject(row));
 }

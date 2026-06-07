@@ -378,7 +378,6 @@ export function MyProjectsList({
           if (!publishing) setPublishTarget(null);
         }}
         onConfirm={confirmPublish}
-        onInsufficientPoints={redirectToBuyPoints}
       />
 
       <PromoteProjectModal
