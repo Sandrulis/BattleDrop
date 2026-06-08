@@ -71,15 +71,26 @@ export type Product = {
   maker: string;
   votes: number;
   comments: number;
+  battleYear?: number | null;
+  battleIsoWeek?: number | null;
   isPromoted?: boolean;
 };
 
 export type ProductComment = {
   id: string;
   author: string;
+  authorUserId: string;
+  authorAvatarUrl?: string | null;
+  /** Full name or handle — used for avatar initials fallback */
+  authorDisplayName?: string;
+  /** Total upvotes received on all of this author's comments */
+  authorTotalUpvotes?: number;
   body: string;
   createdAt: string;
   likes: number;
+  upvotedByViewer?: boolean;
+  firstUpvoterAvatarUrl?: string | null;
+  firstUpvoterName?: string | null;
   replies?: ProductComment[];
 };
 

@@ -12,6 +12,7 @@ export type SiteSettings = {
   defaultCurrency: CurrencyCode;
   battleSubmitPrice: number;
   battleStartHoursFromWeekStart: number;
+  promoteDurationHours: number;
 };
 
 export type SiteDateTimeSettings = Pick<
@@ -28,6 +29,7 @@ export type SiteSettingsRow = {
   default_currency: CurrencyCode;
   battle_submit_price: number;
   battle_start_hours_from_week_start: number;
+  promote_duration_hours: number;
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -39,6 +41,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   defaultCurrency: "EUR",
   battleSubmitPrice: 5,
   battleStartHoursFromWeekStart: 96,
+  promoteDurationHours: 168,
 };
 
 const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
@@ -133,6 +136,9 @@ export function formatSiteTime(
 
   return `${hour12}:${minutes} ${period}`;
 }
+
+/** Fixed sample instant for date/time format previews (avoids hydration drift from `new Date()`). */
+export const SETTINGS_DATE_TIME_PREVIEW_AT = new Date(2026, 5, 8, 9, 0, 0);
 
 export function formatSiteDateTime(
   date: Date,

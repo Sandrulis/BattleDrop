@@ -20,7 +20,7 @@ When the user asks to **update** `README.md` (e.g. `@README.md update`), treat i
    - Use a short **bold theme** line when helpful (e.g. `**Security hardening & CI**`).
    - Leave `### Unreleased` empty or with `- (none)` until the next cycle.
 6. **Sync other README sections** if behavior changed (Features, Environment Variables, Deployment, Routes, Roadmap checkboxes).
-7. **Do not commit or push** unless the user explicitly asks.
+7. **GitHub** — if the user then asks to commit/push, follow `.cursor/rules/github-version-commit.mdc` (message must end with `. vX.Y.Z`). Do not commit or push unless explicitly asked.
 
 ## Changelog entry format
 
@@ -36,5 +36,7 @@ When the user asks to **update** `README.md` (e.g. `@README.md update`), treat i
 ## Versioning & commits
 
 Commit messages for these releases end with the version tag: `Short description. v0.1.6`
+
+See **`.cursor/rules/github-version-commit.mdc`** for the full commit/push checklist (always enforced on GitHub updates).
 
 Only bump `package.json` during a README update when there are **real changes** to document since the last changelog version. If the user only wants typo fixes with no release, skip the bump and say so.

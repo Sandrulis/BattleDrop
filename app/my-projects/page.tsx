@@ -11,14 +11,22 @@ import {
 } from "@/app/lib/battle-week-settings/get-home-battle-week";
 import {
   formatBattleStartHoursLabel,
+  getBattleWeekTiming,
+  resolveBattleWeekDisplayStatus,
+  type BattleWeekDisplayStatus,
 } from "@/app/lib/battle-week-status";
 import { resolveProjectBattleWeek, projectMatchesBattleWeek } from "@/app/lib/projects/project-battle-week";
 import { getUserProjects } from "@/app/lib/projects/get-user-projects";
 import { userHasPublishedProjectInWeek } from "@/app/lib/projects/publish-project";
 import { getPromotedSlotsForWeek } from "@/app/lib/promoted-slots/get-promoted-slots-for-week";
+import { isPromotesEnabled } from "@/app/lib/promoted-slots/is-promotes-enabled";
 import { formatDisplayPoints } from "@/app/lib/site-settings/format-display-money";
+import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
+import { getProductCommentCounts } from "@/app/lib/product-comments";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 import { getEffectiveDateTimeSettingsForUser } from "@/app/lib/users/user-date-time-preferences";
+
+export const dynamic = "force-dynamic";
 
 export default async function MyProjectsPage() {
   const user = await getCurrentAppUser();
@@ -26,19 +34,28 @@ export default async function MyProjectsPage() {
 
   const homeBattleWeek = await getHomeBattleWeek();
   const { battle, battleStartHoursFromWeekStart } = homeBattleWeek;
+  const now = new Date();
   const publishTarget = await getPublishTargetWeek(homeBattleWeek);
 
-  const [projects, promotedSlots, dateSettings, userHasPublishedForTargetWeek] =
-    await Promise.all([
-      getUserProjects(),
-      getPromotedSlotsForWeek(battle.year, battle.week),
-      getEffectiveDateTimeSettingsForUser(user.id),
-      userHasPublishedProjectInWeek(
-        user.id,
-        publishTarget.year,
-        publishTarget.week,
-      ),
-    ]);
+  const [
+    projects,
+    promotedSlots,
+    dateSettings,
+    userHasPublishedForTargetWeek,
+    siteSettings,
+    promotesEnabled,
+  ] = await Promise.all([
+    getUserProjects(),
+    getPromotedSlotsForWeek(battle.year, battle.week),
+    getEffectiveDateTimeSettingsForUser(user.id),
+    userHasPublishedProjectInWeek(
+      user.id,
+      publishTarget.year,
+      publishTarget.week,
+    ),
+    getSiteSettings(),
+    isPromotesEnabled(),
+  ]);
 
   const publishBattleWeek: PublishBattleWeekInfo = {
     week: publishTarget.week,
@@ -65,29 +82,43 @@ export default async function MyProjectsPage() {
     ]),
   );
 
-  const publishedBattleWeekByProjectId = Object.fromEntries(
-    projects.flatMap((project) => {
-      if (project.status !== "published") return [];
+  const publishedBattleWeekByProjectId: Record<
+    string,
+    { week: number; year: number; weekRangeLabel: string }
+  > = {};
+  const publishedBattleWeekStatusByProjectId: Record<
+    string,
+    BattleWeekDisplayStatus
+  > = {};
 
-      const battleWeek = resolveProjectBattleWeek(project);
-      if (!battleWeek) return [];
-
-      return [
-        [
-          project.id,
-          {
-            week: battleWeek.week,
-            year: battleWeek.year,
-            weekRangeLabel: formatBattleWeekRange(
-              battleWeek.week,
-              battleWeek.year,
-              dateSettings,
-            ),
-          },
-        ],
-      ];
-    }),
+  const commentCountByProjectId = await getProductCommentCounts(
+    projects.map((project) => project.id),
   );
+
+  for (const project of projects) {
+    if (project.status !== "published") continue;
+
+    const battleWeek = resolveProjectBattleWeek(project);
+    if (!battleWeek) continue;
+
+    publishedBattleWeekByProjectId[project.id] = {
+      week: battleWeek.week,
+      year: battleWeek.year,
+      weekRangeLabel: formatBattleWeekRange(
+        battleWeek.week,
+        battleWeek.year,
+        dateSettings,
+      ),
+    };
+
+    const timing = getBattleWeekTiming(
+      battleWeek.year,
+      battleWeek.week,
+      battleStartHoursFromWeekStart,
+    );
+    publishedBattleWeekStatusByProjectId[project.id] =
+      resolveBattleWeekDisplayStatus(now, timing);
+  }
 
   return (
     <>
@@ -115,10 +146,16 @@ export default async function MyProjectsPage() {
             projects={projects}
             inCurrentBattleWeekByProjectId={inCurrentBattleWeekByProjectId}
             publishedBattleWeekByProjectId={publishedBattleWeekByProjectId}
+            publishedBattleWeekStatusByProjectId={
+              publishedBattleWeekStatusByProjectId
+            }
             promotedSlots={promotedSlots}
+            promotesEnabled={promotesEnabled}
+            promoteDurationHours={siteSettings.promoteDurationHours}
             publishBattleWeek={publishBattleWeek}
             userHasPublishedForTargetWeek={userHasPublishedForTargetWeek}
             userPointsBalance={user.points}
+            commentCountByProjectId={commentCountByProjectId}
           />
         </div>
       </main>

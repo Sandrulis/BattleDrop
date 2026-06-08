@@ -4,6 +4,9 @@ import { getHomeBattleWeek } from "@/app/lib/battle-week-settings/get-home-battl
 import { projectMatchesBattleWeek } from "@/app/lib/projects/project-battle-week";
 import { getPromotedSlotDefinition } from "@/app/lib/promoted-slots/constants";
 import { getPromotedSlotsForWeek } from "@/app/lib/promoted-slots/get-promoted-slots-for-week";
+import { isPromotesEnabled } from "@/app/lib/promoted-slots/is-promotes-enabled";
+import { computePromoteExpiresAt } from "@/app/lib/promoted-slots/promote-duration";
+import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { createClient } from "@/app/lib/supabase/server";
 import {
@@ -28,6 +31,13 @@ export async function POST(
 
   if (!user) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  }
+
+  if (!(await isPromotesEnabled())) {
+    return NextResponse.json(
+      { error: "Project promotes are not available." },
+      { status: 403 },
+    );
   }
 
   let body: PromoteProjectBody = {};
@@ -68,8 +78,12 @@ export async function POST(
     );
   }
 
-  const homeBattleWeek = await getHomeBattleWeek();
+  const [homeBattleWeek, siteSettings] = await Promise.all([
+    getHomeBattleWeek(),
+    getSiteSettings(),
+  ]);
   const { battle } = homeBattleWeek;
+  const expiresAt = computePromoteExpiresAt(siteSettings.promoteDurationHours);
 
   if (!projectMatchesBattleWeek(project, battle.year, battle.week)) {
     return NextResponse.json(
@@ -116,6 +130,7 @@ export async function POST(
       project_id: id,
       user_id: user.id,
       price_points: slotDefinition.price,
+      expires_at: expiresAt.toISOString(),
     })
     .select("id, spot")
     .single();

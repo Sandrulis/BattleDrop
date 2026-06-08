@@ -3,50 +3,64 @@ import { notFound } from "next/navigation";
 import { ProductDetailView } from "../../components/product-detail-view";
 import { SiteFooter } from "../../components/site-footer";
 import { SiteHeader } from "../../components/site-header";
-import { getPublishedProjectProduct } from "@/app/lib/projects/get-published-project-product";
+import {
+  getProductPageData,
+  getProductPageMetadata,
+} from "@/app/lib/projects/get-product-page-data";
 import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
-import { getProductComments } from "../../lib/product-comments";
-import { getProductById } from "../../lib/mock-data";
 
 type ProductPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 };
-
-async function resolveProduct(id: string) {
-  const publishedProduct = await getPublishedProjectProduct(id);
-  if (publishedProduct) return publishedProduct;
-  return getProductById(id);
-}
 
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
-  const product = await resolveProduct(id);
-  if (!product) return { title: "Product" };
+  const metadata = await getProductPageMetadata(id);
+  if (!metadata) return { title: "Product" };
 
   return {
-    title: product.name,
-    description: product.tagline,
+    title: metadata.title,
+    description: metadata.description,
   };
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
-  const product = await resolveProduct(id);
+export default async function ProductPage({
+  params,
+  searchParams,
+}: ProductPageProps) {
+  const [{ id }, { from }] = await Promise.all([params, searchParams]);
+  const [pageData, { siteName }] = await Promise.all([
+    getProductPageData(id),
+    getSiteSettings(),
+  ]);
 
-  if (!product) notFound();
+  if (!pageData) notFound();
 
-  const comments = getProductComments(id);
-  const { siteName } = await getSiteSettings();
+  const backHref =
+    from === "my-projects" ? "/my-projects" : pageData.backHref;
+  const backLabel =
+    from === "my-projects" ? "Back to My Projects" : pageData.backLabel;
 
   return (
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         <ProductDetailView
-          product={product}
-          comments={comments}
+          product={pageData.product}
+          comments={pageData.comments}
+          launchStat={pageData.launchStat}
+          isSignedIn={pageData.isSignedIn}
+          currentUserId={pageData.currentUserId}
+          currentUserAvatarUrl={pageData.currentUserAvatarUrl}
+          currentUserName={pageData.currentUserName}
+          commentsEnabled={pageData.commentsEnabled}
+          logoImageUrl={pageData.logoImageUrl}
+          screenshotUrl={pageData.screenshotUrl}
+          backHref={backHref}
+          backLabel={backLabel}
           siteName={siteName}
         />
       </main>

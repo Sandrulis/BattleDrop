@@ -9,6 +9,7 @@ import {
   DATE_SEPARATOR_OPTIONS,
   formatSiteDateTime,
   formatSiteMoney,
+  SETTINGS_DATE_TIME_PREVIEW_AT,
   TIME_FORMAT_OPTIONS,
   type CurrencyCode,
   type SiteDateTimeSettings,
@@ -50,7 +51,7 @@ export function UserSettingsForm({
   const [resettingCurrency, setResettingCurrency] = useState(false);
   const { toast, showToast, dismissToast } = useToast();
 
-  const datePreview = formatSiteDateTime(new Date(), settings);
+  const datePreview = formatSiteDateTime(SETTINGS_DATE_TIME_PREVIEW_AT, settings);
   const moneyPreview = formatSiteMoney(5, effectiveCurrency);
   const usesSiteDateDefaults =
     preferences.dateFormat === null &&

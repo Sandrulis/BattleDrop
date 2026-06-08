@@ -17,6 +17,7 @@ function mapSiteSettingsRow(row: SiteSettingsRow): SiteSettings {
     defaultCurrency: row.default_currency,
     battleSubmitPrice: Number(row.battle_submit_price),
     battleStartHoursFromWeekStart: row.battle_start_hours_from_week_start,
+    promoteDurationHours: row.promote_duration_hours,
   };
 }
 
@@ -25,7 +26,7 @@ async function fetchSiteSettingsFromDb(): Promise<SiteSettings> {
   const { data, error } = await supabase
     .from("site_settings")
     .select(
-      "site_name, site_slogan, date_format, time_format, date_separator, default_currency, battle_submit_price, battle_start_hours_from_week_start",
+      "site_name, site_slogan, date_format, time_format, date_separator, default_currency, battle_submit_price, battle_start_hours_from_week_start, promote_duration_hours",
     )
     .eq("id", 1)
     .maybeSingle();

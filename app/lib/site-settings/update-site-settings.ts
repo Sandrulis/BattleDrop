@@ -41,18 +41,26 @@ function parseNonNegativeNumber(value: unknown): number | null {
   return parsed;
 }
 
-function parseBattleStartHours(value: unknown): number | null {
+function parseHoursInWeek(value: unknown, min = 0): number | null {
   const parsed = parseNonNegativeNumber(value);
   if (parsed === null) {
     return null;
   }
 
   const hours = Math.round(parsed);
-  if (hours > 168) {
+  if (hours < min || hours > 168) {
     return null;
   }
 
   return hours;
+}
+
+function parseBattleStartHours(value: unknown): number | null {
+  return parseHoursInWeek(value);
+}
+
+function parsePromoteDurationHours(value: unknown): number | null {
+  return parseHoursInWeek(value, 1);
 }
 
 export function normalizeSiteSettings(input: UpdateSiteSettingsInput): SiteSettings {
@@ -83,6 +91,9 @@ export function normalizeSiteSettings(input: UpdateSiteSettingsInput): SiteSetti
     battleStartHoursFromWeekStart:
       parseBattleStartHours(input.battleStartHoursFromWeekStart) ??
       DEFAULT_SITE_SETTINGS.battleStartHoursFromWeekStart,
+    promoteDurationHours:
+      parsePromoteDurationHours(input.promoteDurationHours) ??
+      DEFAULT_SITE_SETTINGS.promoteDurationHours,
   };
 }
 
@@ -109,10 +120,11 @@ export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
       default_currency: settings.defaultCurrency,
       battle_submit_price: settings.battleSubmitPrice,
       battle_start_hours_from_week_start: settings.battleStartHoursFromWeekStart,
+      promote_duration_hours: settings.promoteDurationHours,
     })
     .eq("id", 1)
     .select(
-      "site_name, site_slogan, date_format, time_format, date_separator, default_currency, battle_submit_price, battle_start_hours_from_week_start",
+      "site_name, site_slogan, date_format, time_format, date_separator, default_currency, battle_submit_price, battle_start_hours_from_week_start, promote_duration_hours",
     )
     .single();
 
@@ -132,6 +144,7 @@ export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
       defaultCurrency: settings.defaultCurrency,
       battleSubmitPrice: settings.battleSubmitPrice,
       battleStartHoursFromWeekStart: settings.battleStartHoursFromWeekStart,
+      promoteDurationHours: settings.promoteDurationHours,
     },
   });
 
@@ -144,5 +157,6 @@ export async function updateSiteSettings(input: UpdateSiteSettingsInput) {
     defaultCurrency: data.default_currency as CurrencyCode,
     battleSubmitPrice: Number(data.battle_submit_price),
     battleStartHoursFromWeekStart: data.battle_start_hours_from_week_start,
+    promoteDurationHours: data.promote_duration_hours,
   } satisfies SiteSettings;
 }

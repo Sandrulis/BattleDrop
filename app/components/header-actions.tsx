@@ -8,15 +8,25 @@ import { MobileNav } from "./mobile-nav";
 type HeaderActionsProps = {
   user: User | null;
   isAdmin: boolean;
+  affiliatesEnabled?: boolean;
+  shopEnabled?: boolean;
   avatarUrl?: string | null;
   displayName?: string | null;
+  points?: number;
+  commentUpvoteCount?: number;
+  availableAffiliates?: number;
 };
 
 export function HeaderActions({
   user,
   isAdmin,
+  affiliatesEnabled = false,
+  shopEnabled = false,
   avatarUrl,
   displayName,
+  points,
+  commentUpvoteCount,
+  availableAffiliates,
 }: HeaderActionsProps) {
   const [navOpen, setNavOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -64,17 +74,22 @@ export function HeaderActions({
   };
 
   return (
-    <>
+    <div className="flex h-8 items-center gap-2">
       <MobileNav open={navOpen} onToggle={toggleNav} onClose={closeAll} />
       <AuthButton
         user={user}
         isAdmin={isAdmin}
+        affiliatesEnabled={affiliatesEnabled}
+        shopEnabled={shopEnabled}
         avatarUrl={avatarUrl}
         displayName={displayName}
+        points={points}
+        commentUpvoteCount={commentUpvoteCount}
+        availableAffiliates={availableAffiliates}
         menuOpen={userMenuOpen}
         onMenuToggle={toggleUserMenu}
         onMenuClose={closeAll}
       />
-    </>
+    </div>
   );
 }

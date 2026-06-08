@@ -16,9 +16,19 @@ function resolveOwner(users: ProjectOwner | ProjectOwner[] | null): ProjectOwner
   return Array.isArray(users) ? (users[0] ?? { full_name: null, email: null }) : users;
 }
 
+export type PublishedProjectProduct = {
+  product: Product;
+  fetchUrl: string;
+  screenshotUrl: string | null;
+  faviconUrl: string | null;
+  battleYear: number | null;
+  battleIsoWeek: number | null;
+  createdAt: string;
+};
+
 export async function getPublishedProjectProduct(
   projectId: string,
-): Promise<Product | null> {
+): Promise<PublishedProjectProduct | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("projects")
@@ -33,5 +43,13 @@ export async function getPublishedProjectProduct(
   if (error || !data) return null;
 
   const project = data as PublishedProjectRow;
-  return projectToProduct(project, resolveOwner(project.users));
+  return {
+    product: projectToProduct(project, resolveOwner(project.users)),
+    fetchUrl: project.fetch_url,
+    screenshotUrl: project.screenshot_url,
+    faviconUrl: project.favicon_url,
+    battleYear: project.battle_year,
+    battleIsoWeek: project.battle_iso_week,
+    createdAt: project.created_at,
+  };
 }

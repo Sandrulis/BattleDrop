@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
+import { AffiliateRefCapture } from "@/app/components/affiliate-ref-capture";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
 import { SiteCurrencySettingsProvider } from "@/app/components/site-currency-settings-provider";
@@ -53,6 +55,9 @@ export default async function RootLayout({
       <body className="flex min-h-full flex-col bg-[#f6f4ef] font-sans text-zinc-900 antialiased">
         <SiteDateSettingsProvider settings={dateSettings}>
           <SiteCurrencySettingsProvider currency={currency}>
+            <Suspense fallback={null}>
+              <AffiliateRefCapture />
+            </Suspense>
             {children}
           </SiteCurrencySettingsProvider>
         </SiteDateSettingsProvider>

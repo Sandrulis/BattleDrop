@@ -8,12 +8,10 @@ import {
   DATE_SEPARATOR_OPTIONS,
   DEFAULT_ADMIN_SITE_SETTINGS,
   formatAdminPreviewDateTime,
-  getCurrencySymbol,
+  SETTINGS_DATE_TIME_PREVIEW_AT,
   TIME_FORMAT_OPTIONS,
   type AdminSiteSettings,
 } from "@/app/lib/admin-settings-options";
-import { formatSiteMoney } from "@/app/lib/site-settings-types";
-
 const inputClassName =
   "w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200";
 
@@ -26,7 +24,10 @@ export function AdminSettingsForm({ initialSettings }: AdminSettingsFormProps) {
   const [saving, setSaving] = useState(false);
   const { toast, showToast, dismissToast } = useToast();
 
-  const datePreview = formatAdminPreviewDateTime(new Date(), settings);
+  const datePreview = formatAdminPreviewDateTime(
+    SETTINGS_DATE_TIME_PREVIEW_AT,
+    settings,
+  );
 
   const updateSetting = <K extends keyof AdminSiteSettings>(
     key: K,
@@ -206,25 +207,25 @@ export function AdminSettingsForm({ initialSettings }: AdminSettingsFormProps) {
           <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="block text-sm font-medium text-zinc-900">
-                Submit price
+                Points per submit
               </span>
               <div className="relative mt-1.5">
-                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
-                  {getCurrencySymbol(settings.defaultCurrency)}
-                </span>
                 <input
                   type="number"
                   min={0}
-                  step="0.01"
+                  step={1}
                   value={settings.battleSubmitPrice}
                   onChange={(e) =>
                     updateSetting("battleSubmitPrice", Number(e.target.value))
                   }
-                  className={`${inputClassName} pl-8`}
+                  className={`${inputClassName} pr-16`}
                 />
+                <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
+                  points
+                </span>
               </div>
               <p className="mt-1.5 text-sm text-zinc-500">
-                Entry fee charged for each project submission.
+                Points deducted for each project submission.
               </p>
             </label>
 
@@ -250,6 +251,26 @@ export function AdminSettingsForm({ initialSettings }: AdminSettingsFormProps) {
                 Hours after the ISO week begins (Monday 00:00) when the battle starts.
               </p>
             </label>
+
+            <label className="block sm:col-span-2">
+              <span className="block text-sm font-medium text-zinc-900">
+                Promote duration (hours)
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={168}
+                step={1}
+                value={settings.promoteDurationHours}
+                onChange={(e) =>
+                  updateSetting("promoteDurationHours", Number(e.target.value))
+                }
+                className={`mt-1.5 sm:max-w-xs ${inputClassName}`}
+              />
+              <p className="mt-1.5 text-sm text-zinc-500">
+                How long one promoted spot stays active after booking (1–168 hours).
+              </p>
+            </label>
           </div>
         </div>
 
@@ -264,9 +285,6 @@ export function AdminSettingsForm({ initialSettings }: AdminSettingsFormProps) {
             {settings.siteSlogan.trim() || DEFAULT_ADMIN_SITE_SETTINGS.siteSlogan}
           </p>
           <p className="mt-3 font-mono text-sm text-zinc-800">{datePreview}</p>
-          <p className="mt-2 font-mono text-sm text-zinc-800">
-            {formatSiteMoney(settings.battleSubmitPrice, settings.defaultCurrency)}
-          </p>
         </div>
 
         <div className="mt-5">

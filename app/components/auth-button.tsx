@@ -8,8 +8,13 @@ import { UserMenu } from "./user-menu";
 type AuthButtonProps = {
   user: User | null;
   isAdmin?: boolean;
+  affiliatesEnabled?: boolean;
+  shopEnabled?: boolean;
   avatarUrl?: string | null;
   displayName?: string | null;
+  points?: number;
+  commentUpvoteCount?: number;
+  availableAffiliates?: number;
   menuOpen?: boolean;
   onMenuToggle?: () => void;
   onMenuClose?: () => void;
@@ -22,8 +27,13 @@ type AuthButtonProps = {
 export function AuthButton({
   user,
   isAdmin = false,
+  affiliatesEnabled = false,
+  shopEnabled = false,
   avatarUrl,
   displayName,
+  points,
+  commentUpvoteCount,
+  availableAffiliates,
   menuOpen = false,
   onMenuToggle,
   onMenuClose,
@@ -55,8 +65,13 @@ export function AuthButton({
       <UserMenu
         user={user}
         isAdmin={isAdmin}
+        affiliatesEnabled={affiliatesEnabled}
+        shopEnabled={shopEnabled}
         avatarUrl={avatarUrl}
         displayName={name}
+        points={points}
+        commentUpvoteCount={commentUpvoteCount}
+        availableAffiliates={availableAffiliates}
         open={menuOpen}
         onToggle={onMenuToggle ?? (() => {})}
         onClose={onMenuClose ?? (() => {})}

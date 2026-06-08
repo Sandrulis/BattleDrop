@@ -39,6 +39,24 @@ export const ADMIN_PANEL_NAV: AdminPanelNavItem[] = [
     description: "Track admin tasks with drag-and-drop columns.",
   },
   {
+    href: "/admin-panel/integrations",
+    label: "Integrations",
+    icon: "fa-plug",
+    description: "Connect third-party services and manage API keys.",
+  },
+  {
+    href: "/admin-panel/shop",
+    label: "Shop",
+    icon: "fa-store",
+    description: "Set exchange rates for upvotes and affiliates to points.",
+  },
+  {
+    href: "/admin-panel/poll",
+    label: "Poll",
+    icon: "fa-square-poll-vertical",
+    description: "Create site-wide polls and track vote progress.",
+  },
+  {
     href: "/admin-panel/settings",
     label: "Settings",
     icon: "fa-gear",

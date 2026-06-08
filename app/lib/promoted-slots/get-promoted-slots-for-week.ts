@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { isPromotesEnabled } from "./is-promotes-enabled";
 import type { BookedPromotedSlot } from "./types";
 
 type PromotedSlotRow = {
@@ -10,6 +11,7 @@ type PromotedSlotRow = {
   project_id: string;
   user_id: string;
   price_points: number;
+  expires_at: string;
 };
 
 function mapPromotedSlotRow(row: PromotedSlotRow): BookedPromotedSlot {
@@ -22,21 +24,26 @@ function mapPromotedSlotRow(row: PromotedSlotRow): BookedPromotedSlot {
     projectId: row.project_id,
     userId: row.user_id,
     pricePoints: row.price_points,
+    expiresAt: row.expires_at,
   };
 }
 
 export async function getPromotedSlotsForWeek(
   year: number,
   week: number,
+  now: Date = new Date(),
 ): Promise<BookedPromotedSlot[]> {
+  if (!(await isPromotesEnabled())) return [];
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("promoted_slots")
     .select(
-      "id, year, iso_week, spot, insert_after_organic, project_id, user_id, price_points",
+      "id, year, iso_week, spot, insert_after_organic, project_id, user_id, price_points, expires_at",
     )
     .eq("year", year)
     .eq("iso_week", week)
+    .gt("expires_at", now.toISOString())
     .order("spot", { ascending: true });
 
   if (error || !data) return [];

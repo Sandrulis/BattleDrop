@@ -7,4 +7,5 @@ export type BookedPromotedSlot = {
   projectId: string;
   userId: string;
   pricePoints: number;
+  expiresAt: string;
 };

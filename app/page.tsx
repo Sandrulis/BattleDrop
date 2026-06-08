@@ -4,25 +4,58 @@ import { ProductFeed } from "./components/product-feed";
 import { Sidebar } from "./components/sidebar";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
+import { buildAffiliateLink } from "./lib/affiliates/build-affiliate-link";
+import { ensureAffiliateCode } from "./lib/affiliates/ensure-affiliate-code";
+import { isAffiliatesEnabled } from "./lib/affiliates/is-affiliates-enabled";
 import { getHomeBattleWeek } from "./lib/battle-week-settings/get-home-battle-week";
+import { getShopSettings } from "./lib/shop/get-shop-settings";
 import { prepareProductFeedOrder } from "./lib/build-leaderboard";
+import { getHomePoll } from "./lib/polls/get-home-poll";
+import { enrichProductsWithCommentCounts } from "./lib/product-comments";
 import { getBattleWeekProducts } from "./lib/projects/get-battle-week-products";
 import { getPromotedSlotsForWeek } from "./lib/promoted-slots/get-promoted-slots-for-week";
+import { formatBattleWeekRange } from "./lib/battle-week";
+import { getCurrentAppUser } from "./lib/users/get-current-user";
+import { getEffectiveDateTimeSettingsForUser } from "./lib/users/user-date-time-preferences";
 
 export default async function Home() {
   const homeBattleWeek = await getHomeBattleWeek();
   const { battle, battleStartHoursFromWeekStart, submitPrice, timing } =
     homeBattleWeek;
 
-  const [products, bookedPromotedSlots] = await Promise.all([
+  const [
+    battleWeekProducts,
+    bookedPromotedSlots,
+    poll,
+    currentUser,
+    affiliatesEnabled,
+    shopSettings,
+  ] = await Promise.all([
     getBattleWeekProducts(battle.year, battle.week),
     getPromotedSlotsForWeek(battle.year, battle.week),
+    getHomePoll(),
+    getCurrentAppUser(),
+    isAffiliatesEnabled(),
+    getShopSettings(),
   ]);
+  const products = await enrichProductsWithCommentCounts(battleWeekProducts);
 
   const displayProducts = prepareProductFeedOrder(
     products,
     homeBattleWeek.shuffleBeforeVoting,
   );
+  const dateSettings = await getEffectiveDateTimeSettingsForUser(
+    currentUser?.id ?? null,
+  );
+  const weekRangeLabel = formatBattleWeekRange(
+    battle.week,
+    battle.year,
+    dateSettings,
+  );
+  const affiliateLink =
+    affiliatesEnabled && currentUser
+      ? buildAffiliateLink(await ensureAffiliateCode(currentUser.id))
+      : undefined;
 
   return (
     <>
@@ -35,6 +68,7 @@ export default async function Home() {
           battleStartHoursFromWeekStart={battleStartHoursFromWeekStart}
           submitPrice={submitPrice}
           timing={timing}
+          weekRangeLabel={weekRangeLabel}
         />
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-8">
@@ -43,8 +77,18 @@ export default async function Home() {
             bookedPromotedSlots={bookedPromotedSlots}
             shuffleBeforeVoting={homeBattleWeek.shuffleBeforeVoting}
             timing={timing}
+            currentUserId={currentUser?.id ?? null}
           />
-          <Sidebar homeBattleWeek={homeBattleWeek} />
+          <Sidebar
+            homeBattleWeek={homeBattleWeek}
+            poll={poll}
+            isSignedIn={currentUser !== null}
+            affiliatesEnabled={affiliatesEnabled}
+            affiliatesPerPoint={
+              affiliatesEnabled ? shopSettings.affiliatesPerPoint : undefined
+            }
+            affiliateLink={affiliateLink}
+          />
         </div>
       </main>
 

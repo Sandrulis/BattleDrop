@@ -7,7 +7,13 @@ export type AdminAuditAction =
   | "admin_todo.create"
   | "admin_todo.update"
   | "admin_todo.delete"
-  | "admin_todo.sync_board";
+  | "admin_todo.sync_board"
+  | "site_integration.create"
+  | "site_integration.update"
+  | "site_integration.delete"
+  | "site_poll.create"
+  | "site_poll.update"
+  | "shop_settings.update";
 
 type LogAdminActionInput = {
   actorId: string;

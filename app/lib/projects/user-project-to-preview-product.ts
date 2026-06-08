@@ -40,5 +40,7 @@ export function userProjectToPreviewProduct(
     maker: makerName,
     votes: 0,
     comments: 0,
+    battleYear: project.battle_year,
+    battleIsoWeek: project.battle_iso_week,
   };
 }

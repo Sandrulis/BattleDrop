@@ -2,17 +2,23 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DeleteProjectModal } from "@/app/components/delete-project-modal";
 import {
   PublishProjectModal,
   type PublishBattleWeekInfo,
 } from "@/app/components/publish-project-modal";
+import { PromoteExpiryCountdown } from "@/app/components/promote-expiry-countdown";
 import { PromoteProjectModal } from "@/app/components/promote-project-modal";
 import { Toast, useToast } from "@/app/components/toast";
 import { buildScreenshotProxyUrl } from "@/app/lib/projects/project-utils";
+import { isPromotedSlotActive } from "@/app/lib/promoted-slots/promote-duration";
 import type { BookedPromotedSlot } from "@/app/lib/promoted-slots/types";
 import type { UserProject } from "@/app/lib/types";
+import {
+  BATTLE_WEEK_STATUS_BADGE,
+  type BattleWeekDisplayStatus,
+} from "@/app/lib/battle-week-status";
 import {
   buildBuyPointsPath,
   INSUFFICIENT_POINTS_STATUS,
@@ -37,20 +43,28 @@ type MyProjectsListProps = {
   projects: UserProject[];
   inCurrentBattleWeekByProjectId: Record<string, boolean>;
   publishedBattleWeekByProjectId: Record<string, PublishedBattleWeekLabel>;
+  publishedBattleWeekStatusByProjectId: Record<string, BattleWeekDisplayStatus>;
   promotedSlots: BookedPromotedSlot[];
+  promotesEnabled: boolean;
+  promoteDurationHours: number;
   publishBattleWeek: PublishBattleWeekInfo;
   userHasPublishedForTargetWeek: boolean;
   userPointsBalance: number;
+  commentCountByProjectId: Record<string, number>;
 };
 
 export function MyProjectsList({
   projects,
   inCurrentBattleWeekByProjectId,
   publishedBattleWeekByProjectId,
+  publishedBattleWeekStatusByProjectId,
   promotedSlots,
+  promotesEnabled,
+  promoteDurationHours,
   publishBattleWeek,
   userHasPublishedForTargetWeek,
   userPointsBalance,
+  commentCountByProjectId,
 }: MyProjectsListProps) {
   const router = useRouter();
   const { toast, showToast, dismissToast } = useToast();
@@ -61,11 +75,27 @@ export function MyProjectsList({
   const [promoteTarget, setPromoteTarget] = useState<UserProject | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
   const [promoting, setPromoting] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const activePromotedSlots = useMemo(
+    () =>
+      promotesEnabled
+        ? promotedSlots.filter((slot) =>
+            isPromotedSlotActive(slot.expiresAt, now),
+          )
+        : [],
+    [promotedSlots, promotesEnabled, now],
+  );
 
   const promotedByProjectId = new Map(
-    promotedSlots.map((slot) => [slot.projectId, slot]),
+    activePromotedSlots.map((slot) => [slot.projectId, slot]),
   );
-  const bookedSpots = promotedSlots.map((slot) => slot.spot);
+  const bookedSpots = activePromotedSlots.map((slot) => slot.spot);
 
   const redirectToBuyPoints = useCallback(() => {
     setPublishTarget(null);
@@ -216,11 +246,21 @@ export function MyProjectsList({
             publishedBattleWeekByProjectId[project.id] ?? null;
           const showPublishButton =
             project.status === "draft" && !userHasPublishedForTargetWeek;
+          const publishedBattleWeekStatus =
+            publishedBattleWeekStatusByProjectId[project.id];
+          const publishedStatusBadge =
+            project.status === "published" && publishedBattleWeekStatus
+              ? BATTLE_WEEK_STATUS_BADGE[publishedBattleWeekStatus]
+              : null;
+          const cardBorderClass =
+            publishedStatusBadge?.borderClass ?? "border-zinc-200";
+          const cardShadowClass =
+            publishedStatusBadge?.shadowClass ?? "shadow-sm";
 
           return (
             <li
               key={project.id}
-              className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
+              className={`overflow-hidden rounded-2xl border bg-white ${cardShadowClass} ${cardBorderClass}`}
             >
               <div className="p-5 sm:p-6">
                 <div className="flex items-start gap-4">
@@ -248,8 +288,11 @@ export function MyProjectsList({
                         <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
                           {statusLabel(project.status)}
                         </span>
-                        {promotedSlot ? (
-                          <span className="promoted-badge">Promoted</span>
+                        {promotesEnabled && promotedSlot ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="promoted-badge">Promoted</span>
+                            <PromoteExpiryCountdown expiresAt={promotedSlot.expiresAt} />
+                          </span>
                         ) : null}
                       </div>
                       {publishedBattleWeek ? (
@@ -289,27 +332,41 @@ export function MyProjectsList({
                           <i className="fa-solid fa-trash-can text-[11px]" aria-hidden />
                           Delete
                         </button>
-                        {project.status === "draft" && (
+                        {(project.status === "draft" ||
+                          project.status === "published") && (
                           <>
                             <Link
-                              href={`/my-projects/${project.id}/preview`}
+                              href={`/products/${project.id}?from=my-projects`}
                               className={actionButtonClassName}
                             >
                               <i className="fa-solid fa-eye text-[11px]" aria-hidden />
                               Preview
                             </Link>
-                            {showPublishButton ? (
-                              <button
-                                type="button"
-                                onClick={() => openPublishModal(project)}
-                                className={`${actionButtonClassName} border-[#da552f]/20 text-[#da552f] hover:bg-[#da552f]/5`}
+                            {(commentCountByProjectId[project.id] ?? 0) > 0 ? (
+                              <Link
+                                href={`/products/${project.id}?from=my-projects`}
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50"
+                                aria-label={`${commentCountByProjectId[project.id]} comments on ${project.name}`}
                               >
-                                <i className="fa-solid fa-rocket text-[11px]" aria-hidden />
-                                Publish
-                              </button>
+                                <i
+                                  className="fa-solid fa-comment-alt text-[11px]"
+                                  aria-hidden
+                                />
+                                {commentCountByProjectId[project.id]}
+                              </Link>
                             ) : null}
                           </>
                         )}
+                        {project.status === "draft" && showPublishButton ? (
+                          <button
+                            type="button"
+                            onClick={() => openPublishModal(project)}
+                            className={`${actionButtonClassName} border-[#da552f]/20 text-[#da552f] hover:bg-[#da552f]/5`}
+                          >
+                            <i className="fa-solid fa-rocket text-[11px]" aria-hidden />
+                            Publish
+                          </button>
+                        ) : null}
                         {project.status === "published" && publishedBattleWeek ? (
                           <span
                             className={`${actionButtonClassName} cursor-default border-[#da552f]/20 bg-[#da552f]/5 text-[#da552f]`}
@@ -322,7 +379,8 @@ export function MyProjectsList({
                             {publishedBattleWeek.year}
                           </span>
                         ) : null}
-                        {project.status === "published" &&
+                        {promotesEnabled &&
+                        project.status === "published" &&
                         inCurrentBattleWeek &&
                         !promotedSlot ? (
                           <button
@@ -380,23 +438,26 @@ export function MyProjectsList({
         onConfirm={confirmPublish}
       />
 
-      <PromoteProjectModal
-        projectName={promoteTarget?.name ?? ""}
-        bookedSpots={bookedSpots}
-        userPointsBalance={userPointsBalance}
-        open={Boolean(promoteTarget)}
-        loading={promoting}
-        selectedSpot={selectedSpot}
-        onSelectSpot={setSelectedSpot}
-        onCancel={() => {
-          if (!promoting) {
-            setPromoteTarget(null);
-            setSelectedSpot(null);
-          }
-        }}
-        onConfirm={confirmPromote}
-        onInsufficientPoints={redirectToBuyPoints}
-      />
+      {promotesEnabled ? (
+        <PromoteProjectModal
+          projectName={promoteTarget?.name ?? ""}
+          bookedSpots={bookedSpots}
+          userPointsBalance={userPointsBalance}
+          promoteDurationHours={promoteDurationHours}
+          open={Boolean(promoteTarget)}
+          loading={promoting}
+          selectedSpot={selectedSpot}
+          onSelectSpot={setSelectedSpot}
+          onCancel={() => {
+            if (!promoting) {
+              setPromoteTarget(null);
+              setSelectedSpot(null);
+            }
+          }}
+          onConfirm={confirmPromote}
+          onInsufficientPoints={redirectToBuyPoints}
+        />
+      ) : null}
 
       <Toast toast={toast} onDismiss={dismissToast} />
     </>

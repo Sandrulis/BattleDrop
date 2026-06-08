@@ -7,8 +7,10 @@ import {
   type BattleWeekTiming,
 } from "../lib/battle-week-status";
 import { buildLeaderboard, buildLeaderboardInFixedOrder, type DisplayProduct } from "../lib/build-leaderboard";
+import { isPromotedSlotActive } from "@/app/lib/promoted-slots/promote-duration";
 import type { BookedPromotedSlot } from "@/app/lib/promoted-slots/types";
 import type { Product } from "../lib/types";
+import { PromoteExpiryCountdown } from "./promote-expiry-countdown";
 import { ProjectLogo } from "./project-logo";
 import { CommentButton, VoteButton } from "./vote-comment-buttons";
 
@@ -17,6 +19,7 @@ type ProductFeedProps = {
   bookedPromotedSlots?: BookedPromotedSlot[];
   shuffleBeforeVoting?: boolean;
   timing: BattleWeekTiming;
+  currentUserId?: string | null;
 };
 
 export function ProductFeed({
@@ -24,14 +27,18 @@ export function ProductFeed({
   bookedPromotedSlots = [],
   shuffleBeforeVoting = false,
   timing,
+  currentUserId = null,
 }: ProductFeedProps) {
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
   const [voteDeltas, setVoteDeltas] = useState<Record<string, number>>({});
   const [votingOpen, setVotingOpen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     const tick = () => {
-      const status = resolveBattleWeekDisplayStatus(new Date(), timing);
+      const current = new Date();
+      setNow(current);
+      const status = resolveBattleWeekDisplayStatus(current, timing);
       setVotingOpen(status === "voting_open");
     };
 
@@ -40,24 +47,37 @@ export function ProductFeed({
     return () => window.clearInterval(id);
   }, [timing]);
 
+  const activePromotedSlots = useMemo(
+    () =>
+      bookedPromotedSlots.filter((slot) =>
+        isPromotedSlotActive(slot.expiresAt, now),
+      ),
+    [bookedPromotedSlots, now],
+  );
 
+  const promotedMetaByProjectId = useMemo(() => {
+    const map = new Map<string, { expiresAt: string; userId: string }>();
+
+    for (const slot of activePromotedSlots) {
+      map.set(slot.projectId, {
+        expiresAt: slot.expiresAt,
+        userId: slot.userId,
+      });
+    }
+
+    return map;
+  }, [activePromotedSlots]);
 
   const entries = useMemo(() => {
-
     const withVotes = initialProducts.map((p) => ({
-
       ...p,
-
       displayVotes: p.votes + (voteDeltas[p.id] ?? 0),
-
     }));
 
-
-
     return shuffleBeforeVoting
-      ? buildLeaderboardInFixedOrder(withVotes, bookedPromotedSlots)
-      : buildLeaderboard(withVotes, bookedPromotedSlots);
-  }, [initialProducts, voteDeltas, shuffleBeforeVoting, bookedPromotedSlots]);
+      ? buildLeaderboardInFixedOrder(withVotes, activePromotedSlots)
+      : buildLeaderboard(withVotes, activePromotedSlots);
+  }, [initialProducts, voteDeltas, shuffleBeforeVoting, activePromotedSlots]);
 
 
 
@@ -132,6 +152,17 @@ export function ProductFeed({
               onVote={() => toggleVote(entry.product.id)}
               votingOpen={votingOpen}
               promoted={entry.promoted}
+              promoteExpiresAt={
+                entry.promoted
+                  ? promotedMetaByProjectId.get(entry.product.id)?.expiresAt
+                  : undefined
+              }
+              showPromoteCountdown={
+                entry.promoted &&
+                currentUserId !== null &&
+                promotedMetaByProjectId.get(entry.product.id)?.userId ===
+                  currentUserId
+              }
             />
           ))}
         </ol>
@@ -157,6 +188,8 @@ type ProductRowProps = {
   onVote: () => void;
   votingOpen: boolean;
   promoted?: boolean;
+  promoteExpiresAt?: string;
+  showPromoteCountdown?: boolean;
 };
 
 function ProductRow({
@@ -167,6 +200,8 @@ function ProductRow({
   onVote,
   votingOpen,
   promoted = false,
+  promoteExpiresAt,
+  showPromoteCountdown = false,
 }: ProductRowProps) {
 
   return (
@@ -238,13 +273,14 @@ function ProductRow({
             </h3>
 
             {promoted && (
-
-              <span id={`promoted-badge-${product.id}`} className="promoted-badge">
-
-                Promoted
-
+              <span className="inline-flex items-center gap-1">
+                <span id={`promoted-badge-${product.id}`} className="promoted-badge">
+                  Promoted
+                </span>
+                {showPromoteCountdown && promoteExpiresAt ? (
+                  <PromoteExpiryCountdown expiresAt={promoteExpiresAt} />
+                ) : null}
               </span>
-
             )}
 
           </div>

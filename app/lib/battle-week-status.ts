@@ -67,6 +67,8 @@ export const BATTLE_WEEK_STATUS_BADGE = {
     label: "Waiting battle week",
     containerClass:
       "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
+    borderClass: "border-2 border-blue-400",
+    shadowClass: "shadow-lg shadow-blue-400/40",
     dotClass: "bg-blue-500",
     pulse: false,
   },
@@ -74,6 +76,8 @@ export const BATTLE_WEEK_STATUS_BADGE = {
     label: "Awaiting voting",
     containerClass:
       "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+    borderClass: "border-2 border-amber-400",
+    shadowClass: "shadow-lg shadow-amber-400/40",
     dotClass: "bg-amber-500",
     pulse: false,
   },
@@ -81,12 +85,16 @@ export const BATTLE_WEEK_STATUS_BADGE = {
     label: "Voting open",
     containerClass:
       "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    borderClass: "border-2 border-emerald-400",
+    shadowClass: "shadow-lg shadow-emerald-400/40",
     dotClass: "animate-pulse bg-emerald-500",
     pulse: true,
   },
   closed: {
     label: "Closed",
     containerClass: "bg-red-50 text-red-700 ring-1 ring-red-200",
+    borderClass: "border-2 border-red-400",
+    shadowClass: "shadow-lg shadow-red-400/40",
     dotClass: "bg-red-500",
     pulse: false,
   },
@@ -95,6 +103,8 @@ export const BATTLE_WEEK_STATUS_BADGE = {
   {
     label: string;
     containerClass: string;
+    borderClass: string;
+    shadowClass: string;
     dotClass: string;
     pulse: boolean;
   }

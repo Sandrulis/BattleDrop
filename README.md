@@ -3,7 +3,7 @@
 Weekly product battles for early-stage founders. Community votes, promoted leaderboard spots, and a Product Hunt–style feed — Next.js frontend with Supabase auth, project submissions, and admin tooling.
 
 **Repository:** [github.com/Sandrulis/BattleDrop](https://github.com/Sandrulis/BattleDrop)  
-**Current version:** `0.1.14` (see [Changelog](#changelog))
+**Current version:** `0.1.27` (see [Changelog](#changelog))
 
 ---
 
@@ -12,9 +12,9 @@ Weekly product battles for early-stage founders. Community votes, promoted leade
 ### Public
 
 - **Weekly leaderboard** — **published projects** for the displayed battle week from Supabase; project **favicons** on feed rows; promoted insertions from `promoted_slots`; votes disabled until voting opens (demo counts still client-side until DB-backed)
-- **Promoted spots** — book from **My Projects** after publishing; fixed positions (before #1, after #5, after #10); highlighted row + badge on home feed
+- **Promoted spots** — when `project_promotes` integration is enabled: book from **My Projects** after publishing; fixed positions (before #1, after #5, after #10); highlighted row + badge on home feed; active for a configurable duration (site default, `expires_at` on each booking); **owner-only countdown** (small mono timer after Promoted badge); live expiry drops badge/row without refresh; `#` on promoted rows shows **vote rank** (real position by votes), not feed position
 - **Monthly championship** — banner with contender voting and countdown
-- **Product pages** — detail view with comments, stats sidebar, and maker info
+- **Product pages** (`/products/[id]`) — unified detail view for published projects and owner draft preview; landing screenshot above About; threaded **DB-backed comments** with optimistic post/upvote, **author upvote totals** (`fa-star` after username), and square rounded avatars with initials fallback; launch stats sidebar (Battle week or **Created** date when not in a battle)
 - **Archive** — season calendar grouped by month with historical week cards
 - **Site identity** — configurable site name and slogan (header, footer, metadata, OG tags)
 - **Date & time display** — site-wide defaults with optional per-user overrides
@@ -22,29 +22,35 @@ Weekly product battles for early-stage founders. Community votes, promoted leade
 
 - **Weekly battle hero** — resolves the **next enabled ISO week** when the current week is disabled; status badge (**Waiting battle week** / awaiting voting / voting open / closed); live countdown to **week start** and **voting opens**; per-week submit price in points; min-project progress bar
 - **Weekly battle rules** — sidebar lists dynamic rules for the displayed week (entry fee, min projects, voting hours, one submit per user, one vote per day, pre-voting shuffle)
+- **Site poll** — when `integration_poll` is enabled and an admin poll is active, home sidebar shows question + answer options; signed-in users vote once; after voting, progress bars compare each option (percent + count)
 - **Pre-voting shuffle** — product order randomised on each page refresh until voting opens (server-side; avoids hydration mismatch)
 
-> Home **leaderboard products** and **promoted bookings** use Supabase (`published` projects + `promoted_slots`). Votes and comments on the feed are still demo/client-side. Auth, user projects, admin entry counts, and **weekly battle context** (`getHomeBattleWeek()`) are wired to Supabase and per-week settings.
+> Home **leaderboard products**, **promoted bookings**, and **product comments** use Supabase (`published` projects + `promoted_slots` + `project_comments`). **Vote counts** on the home feed are still client-side demo until DB-backed voting ships. Auth, user projects, admin entry counts, and **weekly battle context** (`getHomeBattleWeek()`) are wired to Supabase and per-week settings.
 
 ### Auth & projects
 
 - **Google sign-in** — Supabase Auth with session refresh via `proxy.ts`; OAuth callback supports `?next=` return path
-- **Submit product** — two-step flow (URL → review details); guests can start without signing in; **This week** panel uses the same resolved battle week as home (`getHomeBattleWeek()`)
+- **Submit product** — two-step flow (URL → review details); guests can start without signing in; side panel uses the same resolved battle week as home (`getHomeBattleWeek()`)
   - **Step 1** — enter URL; pasted paths like `/dashboard` resolve to the **site root landing page** (`normalizeProjectSubmitUrl`) for preview, screenshot, and save — not login-gated app routes
   - **Signed-in users** get a duplicate check by **domain** before preview (guests skip client check — duplicate blocked on save)
   - **Step 2** — guests see **Login + Save** (not Save); draft stored in `sessionStorage`, then Google sign-in → return to `/submit` → auto-save
   - **Signed-in users** — standard **Save** button; edit via `/submit?projectId=…` (auth required)
   - Meta fetch (direct + Microlink fallback), favicon, screenshot proxy
+  - **Week card** (always visible) — entry fee, live **Voting opens in** countdown, optional **Battle starts at** `X/Y projects` with progress bar when min-projects rule is enabled
 - **Duplicate URLs** — signed-in submit flow checks domain before preview; save always checks server-side (active, soft-deleted, any owner)
-- **My Projects** — list drafts, edit, soft-delete, full-page preview; **Publish** opens modal (target battle week, rules checkbox, entry fee, balance check); published entries show **Week N, YYYY** badge in the action row; **Promote** published entry (spot picker modal, booked slots shown as taken); insufficient points → redirect to **Buy points**
-- **Points balance** — header badge (`fa-money-bill-wave`) between Submit and avatar; clickable → `/buy-points`; same link in publish/promote modals and submit side panel
+- **My Projects** — sorted by **created_at** (newest first); list drafts, edit, soft-delete; **Preview** on drafts and published entries (links to `/products/[id]?from=my-projects`); **comment badge** (`fa-comment-alt` + count) after Preview when the project has comments; **Publish** opens modal (target battle week, rules checkbox, entry fee, balance check); published entries show **Week N, YYYY** badge in the action row; **published cards** use battle-week **border + colored drop shadow** (same palette as home status badge); **Promote** published entry when `project_promotes` integration is enabled (spot picker modal shows site promote duration; active booking shows Promoted badge + owner countdown; insufficient points → redirect to **Buy points**)
+- **Header balances** — signed-in users see **Points** (`fa-money-bill-wave`), **Upvotes** (`fa-star`), and **Affiliates** (`fa-user-tag` + available referral count when `integration_affiliates` enabled) as `h-8` badges with tooltips; desktop header only — on mobile they appear at the top of the account dropdown
+- **Points balance** — clickable → `/buy-points`; same link in publish/promote modals and submit side panel
+- **Comment upvote reputation** — total upvotes received on your comments; same total shown after each comment author’s `@handle`
 - **Buy points** (`/buy-points`) — frontend-only top-up page (Stripe coming soon); point packages UI, account side panel with pricing reference; `?return=` for back navigation
+- **Affiliates** (`/affiliates`) — when `integration_affiliates` is enabled: personal referral link + code, email invites (+), joined/pending stats, account side panel; referral claimed on sign-up via `?ref=` cookie (`bd_affiliate_ref`); account menu link (after My Projects, before Shop); header + home sidebar **Copy link** for signed-in users; **Shop redeem** stats and **How rewards work** only when `integration_shop` is also enabled (otherwise invite-only copy); rates from `shop_affiliates_per_point` via `format-shop-exchange-rate.ts`
+- **Shop** (`/shop`) — when `integration_shop` is enabled: exchange **comment upvotes** and **affiliate referrals** for battle points at admin-set rates; account menu link; **red banner** when integration disabled; affiliate redemption also requires `integration_affiliates`
 - **User settings** (`/settings`) — date/time and currency preferences with account side panel (member since, last seen, quick links); site name, slogan, and default currency are admin-only
 
 ### Admin panel (`/admin-panel`)
 
 - **Overview** — quick links to admin areas
-- **Users** — all accounts, admin badge, last seen (5‑min throttle; shown in each user's own date/time format)
+- **Users** — all accounts, admin badge, **points balance** before admin toggle (same icon/style as header), last seen (5‑min throttle; shown in each user's own date/time format)
 - **Projects** — placeholder UI
 - **Battles** — weekly, monthly, and yearly subnav at `/admin-panel/battles`
   - Year switcher — active year, previous years with real entries, and next year for planning (`?year=`)
@@ -56,12 +62,16 @@ Weekly product battles for early-stage founders. Community votes, promoted leade
   - Default currency (EUR, USD, GBP) — used for price display when users have no personal override
   - Default submit price (shown in site currency)
   - Default hours until battle starts from ISO week beginning (Monday 00:00)
+  - **Promote duration (hours)** — how long one promoted spot stays active after booking (1–168 h; default 168)
 - **Todo** — shared admin task board (`admin_todos` table)
   - Two columns: **Tasks** (pending) and **In progress** — each column header shows a **task count** badge on the right
   - Drag-and-drop between columns, reorder within a column, drop indicator line
   - Shared trash zones above and below both columns (drag task there to delete)
   - Add task via header button → modal (title + description)
   - Edit task via pencil icon on each card → modal
+- **Integrations** (`/admin-panel/integrations`) — admin-managed third-party service keys (`site_integrations`, migration `019`); add/edit modal (name, key, API key, description); each card shows **Configure**, status badge, and enable toggle on one row; audit log on changes; feature gates: `integration_poll` (home sidebar poll), `project_promotes` (promote booking + feed insertions), `integration_affiliates` (referral program), `integration_shop` (upvote / affiliate → points exchange)
+- **Poll** (`/admin-panel/poll`) — create polls with 2–10 answer options (`site_polls`, migration `021`); live vote progress per option; enable one poll at a time for the homepage sidebar; **red warning** when `integration_poll` is disabled (link to Integrations); audit log on create/update
+- **Shop** (`/admin-panel/shop`) — exchange rates on `site_settings` (`shop_upvotes_per_point`, `shop_affiliates_per_point`; defaults 5 upvotes / 1 referral per point); **red warning** when `integration_shop` is disabled (link to Integrations); audit log on rate changes
 
 ### Security
 
@@ -70,7 +80,7 @@ Weekly product battles for early-stage founders. Community votes, promoted leade
 - **Rate limits** — public fetch routes (preview, screenshot, check-url) per IP
 - **Security headers** — CSP, X-Frame-Options, Referrer-Policy (`next.config.ts`)
 - **Input limits** — API validation + DB constraints (migration 009)
-- **Admin audit log** — settings, role changes, and todo actions → `admin_audit_log`
+- **Admin audit log** — settings, role changes, todo actions, integration changes, poll create/update, and shop rate changes → `admin_audit_log`
 - **CI** — npm audit, security unit tests, lint, build, gitleaks (see below)
 - **Docs** — [`security-check.md`](security-check.md) (score **8/10**, checklist, remaining work)
 
@@ -78,8 +88,11 @@ Weekly product battles for early-stage founders. Community votes, promoted leade
 
 - **Toast feedback** — success/error/info via shared popup (auto-dismiss, pauses on hover)
 - **Loading states** — animated spinner + “Loading…” in the content area; header and footer stay visible
-- **Tooltips** — shared `Tooltip` component (`role="tooltip"`); never use HTML `title` for hover hints
-- **User avatars** — Google profile photos in header menu, settings side panel, admin users list, and submit sidebar; initial fallback when image missing or blocked
+- **Tooltips** — shared `Tooltip` component (`role="tooltip"`) with **auto placement** (flips above/below and re-aligns when clipped); never use HTML `title` for hover hints
+- **Site header** — desktop: logo, **Archive** (after site name), **Submit product** (`fa-plus`), balance badges, avatar; mobile: logo + hamburger + avatar only — **Archive** and **Submit product** live in the hamburger menu (`fixed` full-width panel below header)
+- **Account menu** — Font Awesome icon on every item; **Shop** listed after **Affiliates** when integrations enabled
+- **User avatars** — Google profile photos in header menu, settings side panel, admin users list, submit sidebar, and comment threads; square rounded fallback with **initials** from full name or `@handle` (`formatUserAvatarInitials`) when image missing or blocked
+- **Header controls** — shared `h-8` sizing via `header-control-styles.ts` (submit link, balance badges, menu button, avatar)
 - **Header scroll** — body scroll lock only for mobile nav / mobile user menu, not desktop account dropdown
 
 ---
@@ -165,13 +178,15 @@ node scripts/test-supabase.mjs
 | Route | Description |
 |-------|-------------|
 | `/` | Home — monthly banner, weekly battle, leaderboard, sidebar |
-| `/products/[id]` | Product detail — published projects from DB; falls back to mock for legacy demo IDs |
+| `/products/[id]` | Product detail — published projects from DB (owner can preview drafts); threaded comments + upvotes + author reputation badges; square avatars with initials; `?from=my-projects` back link; mock fallback for legacy demo IDs |
 | `/archive` | Season archive with year switcher |
 | `/submit` | Submit new project (guests OK) · edit requires auth (`?projectId=`) |
-| `/my-projects` | User's projects — publish, promote, edit, delete |
-| `/my-projects/[id]/preview` | Full-page project preview |
+| `/my-projects` | User's projects — newest first; published rows tinted by battle week status |
+| `/my-projects/[id]/preview` | Redirects to `/products/[id]?from=my-projects` |
 | `/settings` | Date/time and currency preferences (auth); side panel with account info |
 | `/buy-points` | Buy points (auth); package picker (Stripe placeholder), side panel with account + pricing |
+| `/affiliates` | Referral dashboard — link, invites, joined/pending stats, side panel (auth; requires `integration_affiliates`; shop redeem UI gated on `integration_shop`) |
+| `/shop` | Exchange comment upvotes and affiliate referrals for points (auth; requires `integration_shop` for redemption) |
 | `/admin-panel` | Admin overview (admin only) |
 | `/admin-panel/users` | User list; last seen per user's format |
 | `/admin-panel/projects` | All projects (placeholder UI) |
@@ -180,6 +195,9 @@ node scripts/test-supabase.mjs
 | `/admin-panel/battles/monthly` | 12 monthly battles for selected year |
 | `/admin-panel/battles/yearly` | Annual battle years with entry counts |
 | `/admin-panel/todo` | Admin todo board — drag-and-drop columns, add/edit modals |
+| `/admin-panel/integrations` | Third-party integrations — add/edit modal, inline status + enable toggle (admin only) |
+| `/admin-panel/poll` | Site-wide polls — create question + options, view progress, enable/disable for homepage sidebar (admin only) |
+| `/admin-panel/shop` | Shop exchange rates — upvotes and affiliates per point (admin only) |
 | `/admin-panel/settings` | Site name, slogan, date/time defaults, default currency, battle defaults |
 
 ### API
@@ -189,7 +207,19 @@ node scripts/test-supabase.mjs
 | `/api/projects` | POST | Yes | Create draft; returns `{ skipped, message }` if URL already in DB |
 | `/api/projects/[id]` | PATCH, DELETE | Yes | Update, soft-delete |
 | `/api/projects/[id]/publish` | POST | Yes | Publish draft for display or next available week (`getPublishTargetWeek`); sets `battle_year` / `battle_iso_week`; deducts `submitPrice` points (`users.points`); returns `402` + `redirectTo: /buy-points` if insufficient |
-| `/api/projects/[id]/promote` | POST | Yes | Book promoted slot for current week (`{ spot: 1\|2\|3 }`); deducts slot price (3 / 2 / 1 points); `402` + redirect hint when insufficient |
+| `/api/projects/[id]/promote` | POST | Yes | Book promoted slot for current week (`{ spot: 1\|2\|3 }`); requires `project_promotes` integration enabled (`403` otherwise); sets `expires_at` from site `promoteDurationHours`; deducts slot price (3 / 2 / 1 points); `402` + redirect hint when insufficient |
+| `/api/projects/[id]/comments` | POST | Yes | Post threaded comment on published project; returns `{ comment }` |
+| `/api/project-comments/[id]/upvote` | POST | Yes | Upvote another user's comment (one per user; cannot upvote own) |
+| `/api/integrations` | GET, POST | Admin | List integrations · create |
+| `/api/integrations/[id]` | PATCH, DELETE | Admin | Update integration · delete |
+| `/api/polls` | GET, POST | Admin | List polls · create poll with options |
+| `/api/polls/[id]` | PATCH | Admin | Enable/disable poll for homepage |
+| `/api/polls/[id]/vote` | POST | Yes | Cast one vote per user on active poll |
+| `/api/affiliates` | GET | Yes | Affiliate dashboard (link, invites, joined count, shop redeem hints); `404` when `integration_affiliates` disabled |
+| `/api/affiliates/invites` | POST | Yes | Send email invite (`{ email }`); duplicate invite blocked |
+| `/api/shop-settings` | GET, PATCH | GET public · PATCH admin | Shop exchange rates (`upvotesPerPoint`, `affiliatesPerPoint`) |
+| `/api/shop/redeem-upvotes` | POST | Yes | Exchange comment upvotes for points (`{ points }`); requires `integration_shop` |
+| `/api/shop/redeem-affiliates` | POST | Yes | Exchange joined referrals for points (`{ points }`); requires `integration_shop` + `integration_affiliates` |
 | `/api/projects/check-url` | GET | Yes | Duplicate check by domain; rate limited |
 | `/api/project-preview` | POST | Public | Fetch page meta; SSRF guard + rate limit |
 | `/api/project-screenshot` | GET | Public | Screenshot proxy; SSRF guard + rate limit |
@@ -303,7 +333,7 @@ Price symbols come from the database — not hardcoded `€` strings.
 | `app/lib/battle-week-settings/get-home-battle-week.ts` | Canonical **display week** (`HomeBattleWeek`) and **publish target week** (`getPublishTargetWeek`) |
 | `app/lib/projects/project-battle-week.ts` | Week on a project row (`battle_year` / `battle_iso_week` or `created_at` fallback) |
 | `app/lib/battle-week-settings/resolveEffectiveWeekSettings()` | Per-week enabled, min projects, effective submit price |
-| `app/lib/battle-week-status.ts` | Week timing, display status, shuffle gate, battle-start hours label |
+| `app/lib/battle-week-status.ts` | Week timing, display status, badge/border/shadow classes, shuffle gate |
 | `app/lib/site-settings/format-display-money.ts` | `formatDisplayMoney`, `formatDisplayMoneyWithPoints`, `formatDisplayPoints`, `formatPointsAmount` |
 | `app/lib/site-settings/resolve-effective-currency-settings.ts` | Merge user + site currency |
 | `app/lib/users/user-currency-preferences.ts` | User currency CRUD + `getEffectiveCurrencyForUser` |
@@ -351,13 +381,17 @@ See `.cursor/rules/loading-states.mdc` for agent conventions.
 ```
 app/
 ├── admin-panel/          # Admin UI + layout (header/nav/footer); loading.tsx per segment
-├── api/                  # Route handlers (projects, settings, admin todos)
+├── api/                  # Route handlers (projects, comments, integrations, settings, admin todos)
 ├── auth/                 # OAuth callback + error page
 ├── components/           # UI (feed, hero, toast, tooltip, loading, admin battles, settings forms)
 ├── lib/
 │   ├── battle-week-settings/  # Per-week overrides CRUD
 │   ├── admin-battles/    # Battle entry counts from published projects
 │   ├── admin-todos/      # Todo board CRUD, atomic RPC sync
+│   ├── integrations/     # Site integrations CRUD (admin)
+│   ├── affiliates/       # Referral codes, invites, claim on sign-up; `integration_affiliates` gate
+│   ├── shop/             # Exchange rates, dashboard, redeem RPC wrappers; `integration_shop` gate
+│   ├── product-comments.ts / product-comments-client.ts  # DB reads + optimistic tree helpers
 │   ├── auth/             # `signInWithGoogle` (OAuth + safe return path)
 │   ├── projects/         # CRUD, URL normalize/host match, duplicate checks
 │   ├── security/         # SSRF, rate limit, input limits, audit log, redirect helper
@@ -366,8 +400,10 @@ app/
 │   ├── promoted-slots/   # Slot definitions, week bookings
 │   └── users/            # Profile sync, last seen, date/time & currency prefs, points balance + deduct/credit RPC
 ├── buy-points/           # Buy points page + loading.tsx
-├── my-projects/          # User project list + preview
-├── products/[id]/        # Product detail (mock)
+├── affiliates/           # Referral dashboard (auth)
+├── shop/                 # Upvote / affiliate → points exchange (auth)
+├── my-projects/          # User project list; preview redirects to /products/[id]
+├── products/[id]/        # Product detail (DB + mock fallback)
 ├── settings/             # User preferences page
 ├── submit/               # Submit / edit flow
 ├── archive/              # Archive page + loading.tsx
@@ -379,7 +415,7 @@ app/
 .github/workflows/        # security-audit, security-smoke, secret-scan
 docs/security/           # CSRF posture, Supabase linter review
 .cursor/rules/            # Cursor agent conventions (date formats, currency, toast, loading)
-supabase/migrations/      # Ordered SQL migrations (001–016)
+supabase/migrations/      # Ordered SQL migrations (001–024)
 scripts/
 ├── apply-migrations.mjs  # Run migrations against Supabase Postgres
 ├── check-required-migrations.mjs
@@ -397,10 +433,26 @@ security-check.md         # Security score, checklist, backlog
 - `app/lib/battle-week-settings/get-home-battle-week.ts` — `getHomeBattleWeek()`, `getPublishTargetWeek()` (next week when voting started)
 - `app/components/publish-project-modal.tsx` — publish confirm modal (week info + rules checkbox)
 - `app/components/project-logo.tsx` — favicon or letter avatar (feed, product detail)
-- `app/lib/promoted-slots/` — slot definitions, week bookings, `getPromotedSlotsForWeek()`
-- `app/components/promote-project-modal.tsx` — spot picker (3 / 2 / 1 points labels); balance link; redirect on insufficient points
-- `app/components/points-balance-link.tsx` — clickable points badge/inline link → `/buy-points?return=`
+- `app/lib/promoted-slots/` — slot definitions, week bookings, `getPromotedSlotsForWeek()` (active slots only; empty when `project_promotes` disabled), `promote-duration.ts` (`computePromoteExpiresAt`, `formatPromoteDurationLabel`, `isPromotedSlotActive`), `is-promotes-enabled.ts` (`PROMOTE_INTEGRATION_KEY`, `isPromotesEnabled()`)
+- `app/components/promote-expiry-countdown.tsx` — owner-only live countdown after Promoted badge (home feed + My Projects)
+- `app/components/promote-project-modal.tsx` — spot picker (3 / 2 / 1 points labels); shows promote duration from site settings; balance link; redirect on insufficient points
+- `app/components/points-balance-link.tsx` — clickable points badge/inline link → `/buy-points?return=`; `display` variant for read-only (admin users)
+- `app/components/submit-battle-week-card.tsx` — submit side panel week card (entry fee, min projects, voting countdown)
+- `app/components/submit-voting-opens-countdown.tsx` — live countdown to `timing.votingOpensAt` on `/submit`
+- `app/components/my-projects-list.tsx` — project cards; published rows use `BATTLE_WEEK_STATUS_BADGE` border + shadow; Preview + comment count badge
+- `app/lib/product-comments.ts` — DB-backed comment threads + counts; `getUserCommentUpvoteCount(s)` for author reputation totals; demo fallback for legacy numeric product IDs
+- `app/lib/product-comments-client.ts` — optimistic tree helpers (`appendCommentToTree`, `updateCommentInTree`, `updateCommentsByAuthorInTree`)
+- `app/lib/users/format-user-avatar-initials.ts` — initials from full name or `@handle` (not raw `@`)
+- `app/lib/projects/get-product-page-data.ts` — single resolver for `/products/[id]` (published, owner draft, mock); `ProductLaunchStat` (battle week vs created date)
+- `app/components/product-comments-section.tsx` — comment form, replies, optimistic post/upvote; syncs header/sidebar count; bumps author reputation on upvote
+- `app/components/comment-thread.tsx` — threaded replies; per-comment upvote + author reputation badge; square avatars
+- `app/components/user-comment-upvote-balance.tsx` — header comment-upvote badge (`fa-star`)
+- `app/components/user-affiliate-balance.tsx` — header affiliate badge (`fa-user-tag`)
+- `app/components/author-upvote-badge.tsx` — inline author reputation in comment header
 - `app/components/user-points-balance.tsx` — header points badge wrapper
+- `app/components/header-control-styles.ts` — shared `h-8` classes for submit link, balance badges, icon buttons
+- `app/components/affiliate-copy-link-button.tsx` — home sidebar **Copy link** (toast on success)
+- `app/lib/affiliates/get-user-available-affiliates.ts` — available referral count for header badge + sidebar
 - `app/components/buy-points-panel.tsx` — point packages UI (Stripe placeholder)
 - `app/components/buy-points-side-panel.tsx` — account + pricing reference on `/buy-points`
 - `app/lib/users/user-points.ts` — balance read, atomic deduct/credit via RPC
@@ -413,7 +465,7 @@ security-check.md         # Security score, checklist, backlog
 - `app/components/site-currency-settings-provider.tsx` — client currency context (`useSiteCurrency`)
 - `app/lib/site-settings/format-display-money.ts` — `formatDisplayMoney`, `formatDisplayMoneyWithPoints`
 - `app/lib/users/user-currency-preferences.ts` — user currency CRUD + effective currency resolver
-- `app/components/tooltip.tsx` — shared hover tooltip (`role="tooltip"`); no HTML `title` hints
+- `app/components/tooltip.tsx` — client hover tooltip with auto placement (`role="tooltip"`); no HTML `title` hints
 - `app/components/admin-battles-subnav.tsx` — Weekly / Monthly / Yearly subnav on battles pages
 - `app/components/admin-battles-year-switcher.tsx` — year picker with Active / Upcoming labels
 - `app/components/admin-battle-week-list.tsx` — scrollable weekly battle cards with auto-scroll
@@ -424,6 +476,20 @@ security-check.md         # Security score, checklist, backlog
 - `app/components/user-avatar.tsx` — profile image with initial fallback
 - `app/lib/admin-battles/get-records.ts` — aggregate published project counts by week/month/year
 - `app/lib/users/resolve-avatar-url.ts` — Google avatar URL from profile metadata
+- `app/components/admin-integrations-panel.tsx` — integrations list; Configure + status badge + enable toggle per card
+- `app/components/admin-integration-form-modal.tsx` — add/edit integration modal
+- `app/lib/integrations/` — CRUD, normalize input, map rows (`site_integrations`); `is-integration-enabled.ts` for runtime feature gates
+- `app/components/admin-poll-panel.tsx` — create poll form, progress bars, homepage enable toggle
+- `app/components/sidebar-poll.tsx` — home sidebar vote UI + post-vote progress bars
+- `app/components/poll-progress-bars.tsx` — shared option comparison bars (admin + sidebar)
+- `app/lib/polls/` — types, create/update/vote, `isPollEnabled()`, `getHomePoll()`, `getSitePolls()` (`site_polls`, `site_poll_options`, `site_poll_votes`)
+- `app/lib/affiliates/` — codes, invites, `claimAffiliateReferral()`, `getAffiliateDashboard()`; `AFFILIATE_INTEGRATION_KEY`, `isAffiliatesEnabled()`
+- `app/components/affiliate-ref-capture.tsx` — stores `?ref=` in cookie for OAuth claim
+- `app/components/affiliates-panel.tsx` / `affiliates-side-panel.tsx` — `/affiliates` UI
+- `app/lib/shop/` — `getShopSettings()`, `getShopDashboard()`, `redeemShopUpvotes()` / `redeemShopAffiliates()`; `SHOP_INTEGRATION_KEY`, `isShopEnabled()`
+- `app/lib/shop/format-shop-exchange-rate.ts` — canonical affiliate/shop rate labels (sidebar, affiliates, shop panels)
+- `app/components/admin-shop-panel.tsx` — admin exchange-rate form + integration disabled warning
+- `app/components/shop-panel.tsx` / `shop-side-panel.tsx` — `/shop` exchange UI
 - `app/components/admin-todo-board.tsx` — drag-and-drop todo columns + add/edit modals
 - `app/components/admin-todo-form-modal.tsx` — shared add/edit task modal
 - `app/lib/admin-todos/` — get/create/update/delete/sync board against `admin_todos`
@@ -442,7 +508,7 @@ security-check.md         # Security score, checklist, backlog
 
 ## Promoted Spots Logic
 
-Promoted products are visually distinct (badge + border + background) but show their **real vote rank**, not the paid slot number.
+Promoted products are visually distinct (badge + border + background) but show their **real vote rank** (`#` prefix), not the paid slot number or visual feed position.
 
 | Spot | Position |
 |------|----------|
@@ -452,7 +518,9 @@ Promoted products are visually distinct (badge + border + background) but show t
 
 Promoted products are excluded from the organic vote ranking to avoid duplicates.
 
-Bookings persist in `public.promoted_slots` (migration `014`). Users book via **My Projects → Promote** after publishing. **Points are deducted** on promote (3 / 2 / 1 by spot) and on publish (`submitPrice` from `getPublishTargetWeek()`). Insufficient balance returns HTTP `402` and redirects the client to `/buy-points`.
+**Integration gate:** create `project_promotes` in **Admin → Integrations** and enable it. When disabled or missing, `isPromotesEnabled()` returns false — no Promote button on My Projects, no promoted insertions on the home feed, `POST /api/projects/[id]/promote` returns `403`, and `getPromotedSlotsForWeek()` returns `[]`.
+
+Bookings persist in `public.promoted_slots` (migration `014`; `expires_at` added in `022`). Users book via **My Projects → Promote** after publishing (integration enabled). Each booking gets `expires_at = now + promoteDurationHours` from `site_settings` (admin default 1–168 hours). `getPromotedSlotsForWeek()` returns only non-expired rows — expired slots free the position and drop off the feed (client ticks every second on home + My Projects). **Project owners** see a small mono countdown after the Promoted badge until expiry. **Points are deducted** on promote (3 / 2 / 1 by spot) and on publish (`submitPrice` from `getPublishTargetWeek()`). Insufficient balance returns HTTP `402` and redirects the client to `/buy-points`.
 
 When every (or most) feed entry is promoted, unplaced promoted slots are still appended to the leaderboard so multiple promoted products remain visible (`build-leaderboard.ts`).
 
@@ -485,6 +553,14 @@ When every (or most) feed entry is promoted, unplaced promoted slots are still a
    | `014_promoted_slots.sql` | Promoted slot bookings + public read for published projects |
    | `015_project_battle_week.sql` | `battle_year` + `battle_iso_week` on published projects; backfill from `created_at` |
    | `016_user_points.sql` | `users.points` balance; client cannot self-edit; `deduct_user_points` / `credit_user_points` RPC (service_role) |
+   | `017_project_comments.sql` | Threaded comments on published projects (`project_comments`) |
+   | `018_project_comments_grants.sql` | Grants + `select_own` RLS policy for comment authors |
+   | `019_site_integrations.sql` | Admin-managed third-party integrations (`site_integrations`) |
+   | `020_project_comment_upvotes.sql` | One upvote per user per comment (`project_comment_upvotes`) |
+   | `021_site_polls.sql` | Site-wide polls (`site_polls`, `site_poll_options`, `site_poll_votes`) |
+   | `022_site_promote_duration.sql` | `promote_duration_hours` on `site_settings`; `expires_at` on `promoted_slots` |
+   | `023_affiliates.sql` | `users.affiliate_code`, `referred_by_user_id`; `affiliate_invites`; protected affiliate fields |
+   | `024_shop.sql` | Shop rates on `site_settings`; `shop_*_redeemed` on `users`; `redeem_shop_upvotes` / `redeem_shop_affiliates` RPC |
 
    ```bash
    npm run db:migrate
@@ -542,7 +618,7 @@ After saving env vars: **Deployments → latest → Redeploy**. A new build is r
 
 ### Checklist
 
-1. Run migrations `001`–`016` on the **production** Supabase project (see [Supabase Setup](#supabase-setup))
+1. Run migrations `001`–`024` on the **production** Supabase project (see [Supabase Setup](#supabase-setup))
 2. Add all four env vars above in Vercel (**Production**)
 3. Set Supabase **Authentication → URL Configuration** redirect URLs to include `https://battle-drop.vercel.app/**`
 4. Redeploy on Vercel
@@ -570,9 +646,11 @@ Version follows `package.json` (`semver`). Every commit message ends with the ve
 Short description of the change. v0.1.13
 ```
 
-Bump the version in `package.json` when the change is user-facing or notable. Current: `0.1.14`.
+Bump the version in `package.json` when the change is user-facing or notable. Current: `0.1.24`.
 
 When the user asks to **update README**, follow `.cursor/rules/readme-version-update.mdc`: bump version, move `Unreleased` → new changelog section, list all improvements since the last version.
+
+When the user asks to **commit** or **push**, follow `.cursor/rules/github-version-commit.mdc` — every release commit message must end with `. vX.Y.Z`.
 
 ---
 
@@ -583,6 +661,130 @@ Summary of what shipped in each release (newest first).
 ### Unreleased
 
 - (none)
+
+### v0.1.27
+
+**Header & mobile nav polish**
+
+- **Affiliate header badge** — `fa-user-tag` + available referral count when `integration_affiliates` enabled; `getUserAvailableAffiliates()`; links to `/affiliates`
+- **Balance tooltips** — Points / Upvotes / Affiliates badges labeled via shared `Tooltip`; auto-flip when clipped by viewport or sticky header
+- **Nav cleanup** — removed **This Month** / **This week** links and `nav-month-link` pulse CSS; **Archive** after site name on desktop (`md+`); **Submit product** gets `fa-plus` icon
+- **Mobile header** — Archive + Submit hidden from bar; hamburger menu shows both (`fixed` full-width panel — fixes mispositioned `absolute` dropdown); balance badges moved into account dropdown top
+- **Account menu** — Font Awesome icon per item; **Shop** after **Affiliates**; unified `h-8` control sizing (`header-control-styles.ts`)
+- **Home sidebar** — **Referrals & points** card: **Copy link** replaces Shop button; `AffiliateCopyLinkButton` + server-built affiliate URL for signed-in users
+- **Hydration fix** — `BattleHero` week range formatted on server (`weekRangeLabel` prop) so date settings match SSR and client
+
+### v0.1.26
+
+**Affiliates & Shop UX polish**
+
+- **Home sidebar** — **Referrals & points** card only when `integration_affiliates` enabled; copy uses live `shop_affiliates_per_point` from `getShopSettings()` (passed from `page.tsx`); **Shop** button only when `integration_shop` enabled
+- **`/affiliates`** — two-column layout with `AffiliatesSidePanel` (account, referral summary, quick links); main panel stat cards for joined / pending invites; shop redeem cards (**Available to redeem**, **Redeemable now**) hidden when shop integration off
+- **Shop-gated copy** — **How rewards work** (Shop rate, point spending) only when shop active; **How invites work** fallback when shop disabled — avoids “enable Shop” dead-ends
+- **`format-shop-exchange-rate.ts`** — shared rate labels (`formatAffiliateHomeSidebarBlurb`, `formatAffiliateExchangeArrow`, etc.) for home sidebar, affiliates, and shop panels
+- **`getAffiliateDashboard()`** — includes `affiliatesPerPoint`, `availableAffiliates`, `maxRedeemablePoints`, `shopEnabled` for conditional UI
+
+### v0.1.25
+
+**Affiliates & Shop — referral program and points exchange**
+
+- **Migration `023`** — `users.affiliate_code`, `referred_by_user_id`; `affiliate_invites` (pending/joined); trigger protects affiliate fields from client edits
+- **Affiliates** (`/affiliates`) — personal link + code, email invites, joined/pending stats; `GET /api/affiliates`, `POST /api/affiliates/invites`; account menu when `integration_affiliates` enabled
+- **Referral capture** — `?ref=` stored in `bd_affiliate_ref` cookie; `claimAffiliateReferral()` on OAuth callback; one referrer per new user
+- **Home sidebar** — **Referrals & points** card when affiliates enabled; shows Shop rate + links to Affiliates and Shop
+- **Migration `024`** — `site_settings.shop_upvotes_per_point` (default 5), `shop_affiliates_per_point` (default 1); `users.shop_upvotes_redeemed` / `shop_affiliates_redeemed`; atomic `redeem_shop_upvotes` / `redeem_shop_affiliates` RPC
+- **Admin Shop** (`/admin-panel/shop`) — set upvotes and referrals required per point; **red warning** when `integration_shop` disabled; nav link in admin sidebar
+- **Shop** (`/shop`) — exchange comment upvotes and joined referrals for points; balances + rates side panel; **red banner** when shop integration off; account menu when `integration_shop` enabled
+- **API** — `GET/PATCH /api/shop-settings`, `POST /api/shop/redeem-upvotes`, `POST /api/shop/redeem-affiliates`
+- **Integration gates** — `integration_affiliates` in `affiliate-types.ts`; `integration_shop` in `shop-types.ts`; `format-shop-exchange-rate.ts` for shared rate copy
+- **Audit** — `shop_settings.update` in admin audit log
+
+### v0.1.24
+
+**Promote expiry UX & `project_promotes` integration gate**
+
+- **Owner countdown** — `PromoteExpiryCountdown` after Promoted badge on home feed (owner only) and My Projects; live `1d 2h 3m 4s` style timer
+- **Live expiry** — `ProductFeed` and `MyProjectsList` filter active slots every second; badge, highlighted row, and Promote button return when `expires_at` passes (no page refresh)
+- **Integration gate** — `project_promotes` in `site_integrations`; `isPromotesEnabled()` in `is-promotes-enabled.ts`; when disabled: no promote UI, empty feed insertions, API `403`
+- **Docs** — Promoted Spots Logic clarifies `#` = vote rank; integration setup note for admins
+
+### v0.1.23
+
+**Admin Poll — integration disabled warning**
+
+- **Admin Poll** — red banner when `integration_poll` is disabled, with link to Integrations (replaces always-on blue info callout)
+- **`isPollEnabled()`** — canonical poll integration gate in `app/lib/polls/is-poll-enabled.ts`; used by admin page and `getHomePoll()`
+
+### v0.1.22
+
+**Promote duration — admin setting & slot expiry**
+
+- **Migration `022`** — `site_settings.promote_duration_hours` (1–168 h, default 168); `promoted_slots.expires_at` (backfilled for existing rows)
+- **Admin Settings** — *Promote duration (hours)* under battle defaults; saved via `PATCH /api/site-settings`
+- **Booking** — `POST /api/projects/[id]/promote` sets `expires_at` from `computePromoteExpiresAt()` in `promote-duration.ts`
+- **Active slots only** — `getPromotedSlotsForWeek()` filters `expires_at > now`; expired spots reopen for booking and leave the home feed
+- **Promote modal** — shows duration label (e.g. “3 days”, “24 hours”) from site settings
+
+### v0.1.21
+
+**Site polls — admin panel & home sidebar**
+
+- **Migration `021`** — `site_polls`, `site_poll_options`, `site_poll_votes`; one vote per user per poll; RLS for enabled polls + admin CRUD
+- **Admin Poll** (`/admin-panel/poll`) — create question with 2–10 options; progress bars with percent + vote count; enable toggle (one active poll at a time); nav link in admin sidebar
+- **Home sidebar** — `getHomePoll()` shows poll when `integration_poll` integration is enabled **and** an admin poll is active; `SidebarPoll` for vote UI; progress bars after voting
+- **API** — `GET/POST /api/polls`, `PATCH /api/polls/[id]`, `POST /api/polls/[id]/vote` (auth required; duplicate vote blocked)
+- **Integration gate** — `isIntegrationEnabled()` in `app/lib/integrations/`; poll constant `integration_poll` in `poll-types.ts`
+- **Audit** — `site_poll.create` / `site_poll.update` in admin audit log
+
+### v0.1.20
+
+**Comment upvote reputation & comment avatars**
+
+- **Header badge** — signed-in users see total comment upvotes received (`fa-star` + count) before the avatar; `getUserCommentUpvoteCount()` in `product-comments.ts`
+- **Author reputation in threads** — after each `@handle`, star + lifetime upvote total on that author’s comments; optimistic bump when upvoting (`updateCommentsByAuthorInTree`)
+- **Comment avatars** — square rounded (`rounded-lg`); initials from full name or handle via `formatUserAvatarInitials` (fixes `@` placeholder); `authorDisplayName` on `ProductComment`
+
+### v0.1.19
+
+**Admin integrations card layout**
+
+- **Integrations UI** — status badge (Enabled/Disabled) and enable toggle moved inline after **Configure**; removed separate Active footer block on each card
+
+### v0.1.18
+
+**DB-backed product comments, unified product page & admin integrations**
+
+- **Product comments** — migrations `017`–`018`; threaded `project_comments` on published projects; `POST /api/projects/[id]/comments` (auth required); RLS + admin client insert
+- **Comment upvotes** — migration `020`; `POST /api/project-comments/[id]/upvote`; one upvote per user; cannot upvote own comment; optimistic UI (no full-page refresh)
+- **Product page** — `get-product-page-data.ts` single resolver for `/products/[id]`; owner draft preview; landing screenshot above About; launch stats show **Battle Week** only when `battle_year` / `battle_iso_week` set, otherwise **Created [date]**
+- **Preview redirect** — `/my-projects/[id]/preview` → `/products/[id]?from=my-projects`; My Projects Preview + comment badge link to product page
+- **Comment counts** — home feed and My Projects list load real counts from DB (`getProductCommentCount`, `enrichProductsWithCommentCounts`)
+- **Admin integrations** — migration `019`; `/admin-panel/integrations` + `GET/POST/PATCH/DELETE /api/integrations`; enable/disable third-party keys; audit log
+- **React fix** — parent comment count sync via `useEffect` (fixes setState-during-render warning)
+
+### v0.1.17
+
+**My Projects preview & comment badge**
+
+- **Preview on published** — **Preview** button shown for published projects (not only drafts)
+- **Comment indicator** — after Preview, `fa-comment-alt` + count when `getProductCommentCount()` > 0; links to product page (see v0.1.18 for DB comments)
+- **Cursor rules** — `github-version-commit.mdc` enforces version-tagged commit messages on GitHub push
+
+### v0.1.16
+
+**My Projects sort & published card styling**
+
+- **My Projects sort** — `getUserProjects()` orders by `created_at` descending (newest at top)
+- **Published card accent** — border (`border-2`) + colored drop shadow from project's battle week status via `BATTLE_WEEK_STATUS_BADGE` (`borderClass`, `shadowClass`); status resolved server-side per published row
+
+### v0.1.15
+
+**Submit week card, CI fixes & admin user points**
+
+- **Submit side panel** — `SubmitBattleWeekCard` always shown (new submit + edit); live **Voting opens in** countdown (`SubmitVotingOpensCountdown`); replaces static “24h after week start” copy
+- **Min projects on submit** — when enabled, shows `submitted/required` and progress bar directly under **Battle starts at** (same data as home hero)
+- **Admin users** — points badge before admin toggle (`PointsBalanceLink` `display` variant)
+- **CI / build** — fix publish modal `set-state-in-effect` lint; TypeScript fixes for legacy project queries without `battle_year` / `battle_iso_week` columns
 
 ### v0.1.14
 
@@ -700,7 +902,7 @@ Summary of what shipped in each release (newest first).
 - Per-IP rate limits on preview, screenshot, and check-url routes
 - Security headers in `next.config.ts` (CSP, X-Frame-Options, Referrer-Policy, …)
 - Input length limits — API validation + DB constraints (migration `009`)
-- Admin audit log (`admin_audit_log`) for settings, role changes, and todo actions
+- Admin audit log (`admin_audit_log`) for settings, role changes, todo actions, and integration CRUD
 - Atomic todo board sync via Postgres RPC `sync_admin_todo_board`
 - `check-url` requires sign-in; guests rely on server-side duplicate check on save
 - Security unit tests (`npm run test:security`)
@@ -755,7 +957,7 @@ Summary of what shipped in each release (newest first).
 
 - Home page — monthly championship banner, weekly battle hero, product leaderboard
 - Promoted spot insertions (before #1, after #5, after #10) with demo voting UI
-- Product detail pages with comments (mock)
+- Product detail pages with comments (mock — replaced by DB in v0.1.18)
 - Archive page — season calendar grouped by month
 - Site header, footer, mobile nav
 - Mock data layer (`mock-data.ts`, `build-leaderboard.ts`, `archive-data.ts`)
@@ -789,13 +991,26 @@ Summary of what shipped in each release (newest first).
 - [x] Toast feedback + route loading spinners (header/footer stay visible)
 - [ ] Admin audit log UI (read-only view in admin panel)
 - [ ] Global rate limiting (edge/WAF) for production scale
-- [ ] Persistent votes and comments
+- [x] **DB-backed product comments** — threaded comments + upvotes on `/products/[id]` (migrations `017`–`020`, v0.1.18)
+- [ ] Persistent **votes** (home feed vote counts still client-side demo)
 - [ ] Seed database from mock data / real battles
 - [x] User **points balance** — `users.points`, header badge, migration `016` (v0.1.14)
 - [x] **Points deduction** on publish and promote (v0.1.14)
 - [x] **Buy points** page — frontend placeholder for Stripe (v0.1.14)
+- [x] **Submit week card** — voting countdown + min-project progress on `/submit` (v0.1.15)
+- [x] **My Projects** — newest-first sort + published status border/shadow (v0.1.16)
+- [x] **My Projects preview** — Preview on published + comment count badge (v0.1.17)
+- [x] **Product comments** — DB-backed threads, upvotes, optimistic UI (v0.1.18)
+- [x] **Comment upvote reputation** — header badge + author totals in threads (v0.1.20)
+- [x] **Admin integrations** — `/admin-panel/integrations` (v0.1.18)
+- [x] **Site polls** — admin Poll page + home sidebar when `integration_poll` enabled (migration `021`, v0.1.21)
+- [x] **Promote duration** — admin setting + `expires_at` on promoted slots (migration `022`, v0.1.22)
+- [x] **Promote owner countdown** — live timer after Promoted badge until slot expires (v0.1.24)
+- [x] **`project_promotes` integration gate** — disable promote booking + feed insertions from Integrations (v0.1.24)
+- [x] **Affiliate / referral system** — `/affiliates`, invites, `?ref=` capture, `integration_affiliates` gate (migration `023`, v0.1.25)
+- [x] **Shop** — exchange upvotes and referrals for points; admin rates; `integration_shop` gate (migration `024`, v0.1.25)
+- [x] **Header & mobile nav** — affiliate badge, balance tooltips, simplified nav, mobile hamburger menu, `header-control-styles` (v0.1.27)
 - [ ] Stripe checkout — credit points after payment
-- [ ] Affiliate / referral system
 - [ ] Payment step on submit (fiat alternative to points)
 
 ---
@@ -806,11 +1021,11 @@ Practical backlog — ops first, then product. See also [Roadmap](#roadmap) and 
 
 ### Ops & deploy (do first)
 
-- [ ] **Commit + push `v0.1.14`** — points system, buy-points page, publish/promote deduction
+- [ ] **Commit + push `v0.1.19`** — product comments, upvotes, unified product page, admin integrations
 - [ ] **Vercel env vars** — copy all four Supabase vars from `.env.local`; set `NEXT_PUBLIC_SITE_URL=https://battle-drop.vercel.app`
 - [ ] **Redeploy** on Vercel after env changes (required — old deploys keep missing env at runtime)
 - [ ] **Verify production** — `https://battle-drop.vercel.app/` loads; Google sign-in redirects to prod, not localhost
-- [ ] **Migrations 014–016** on production Supabase — `promoted_slots`, `battle_year` / `battle_iso_week`, `users.points`
+- [ ] **Migrations 014–024** on production Supabase — `promoted_slots`, battle week columns, `users.points`, `project_comments`, `site_integrations`, `project_comment_upvotes`, `site_polls`, promote duration + slot expiry, affiliates, shop exchange
 
 ### Security & quality
 
@@ -829,14 +1044,24 @@ Practical backlog — ops first, then product. See also [Roadmap](#roadmap) and 
 
 ### Product (replace mock data)
 
-- [ ] **Persistent votes and comments** — DB-backed; home feed vote counts still client-side demo
+- [x] **Product comments** — DB-backed threads + upvotes on published projects (v0.1.18)
+- [ ] **Persistent votes** — home feed vote counts still client-side demo
 - [x] **Publish flow** — draft → published weekly battle (v0.1.11)
 - [x] **Promoted spot booking** — My Projects modal + `promoted_slots` table (v0.1.11)
+- [x] **Promote duration** — admin hours setting + slot `expires_at` (migration `022`, v0.1.22)
+- [x] **Promote owner countdown + live expiry** — home feed + My Projects (v0.1.24)
+- [x] **`project_promotes` integration gate** — Integrations toggle (v0.1.24)
 - [x] **Points deduction** on publish and promote (v0.1.14)
 - [x] **Buy points** frontend at `/buy-points` (v0.1.14)
+- [x] **Submit side panel** — week card with voting countdown and min-project bar (v0.1.15)
+- [x] **My Projects published styling** — battle week status border + shadow (v0.1.16)
+- [x] **My Projects preview + comments badge** — published Preview + comment count (v0.1.17)
+- [x] **Unified product page** — `/products/[id]` for published + owner preview; launch stats; screenshot (v0.1.18)
+- [x] **Admin integrations** page (v0.1.18)
 - [ ] **Stripe checkout** — wire buy-points packages to credit `users.points`
 - [ ] **Seed** real battles from mock data or admin import
-- [ ] **Affiliate / referral** system
+- [x] **Affiliate / referral** system — `/affiliates`, invites, referral cookie (migration `023`, v0.1.25)
+- [x] **Shop** — upvote / affiliate → points exchange (migration `024`, v0.1.25)
 - [ ] **Payment** step on submit (fiat alternative to points)
 
 ---

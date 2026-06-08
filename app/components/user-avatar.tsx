@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatUserAvatarInitials } from "@/app/lib/users/format-user-avatar-initials";
 
 type UserAvatarProps = {
   src?: string | null;
@@ -16,12 +17,12 @@ export function UserAvatar({
   fallbackClassName,
 }: UserAvatarProps) {
   const [failed, setFailed] = useState(false);
-  const initial = name.trim().charAt(0).toUpperCase() || "?";
+  const initials = formatUserAvatarInitials(name);
 
   if (!src || failed) {
     return (
       <span className={fallbackClassName} aria-hidden>
-        {initial}
+        {initials}
       </span>
     );
   }

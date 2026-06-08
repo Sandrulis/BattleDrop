@@ -1,7 +1,10 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { AFFILIATE_REF_COOKIE } from "@/app/lib/affiliates/affiliate-types";
+import { claimAffiliateReferral } from "@/app/lib/affiliates/claim-affiliate-referral";
+import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { createClient } from "@/app/lib/supabase/server";
 import { syncUserFromAuth } from "@/app/lib/users/sync-user";
-import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -19,6 +22,12 @@ export async function GET(request: Request) {
 
       if (user) {
         await syncUserFromAuth(user);
+
+        const cookieStore = await cookies();
+        const refCode = cookieStore.get(AFFILIATE_REF_COOKIE)?.value;
+        if (refCode) {
+          await claimAffiliateReferral(user.id, decodeURIComponent(refCode));
+        }
       }
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocalEnv = process.env.NODE_ENV === "development";

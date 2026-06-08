@@ -1,41 +1,47 @@
+import type { ProductLaunchStat } from "@/app/lib/projects/get-product-page-data";
 import type { Product } from "../lib/types";
-import { getBattleContext, getProductMeta } from "../lib/product-meta";
 
 type ProductDetailSidebarProps = {
   product: Product;
   voteCount: number;
+  launchStat: ProductLaunchStat;
   siteName: string;
 };
 
 export function ProductDetailSidebar({
   product,
   voteCount,
+  launchStat,
   siteName,
 }: ProductDetailSidebarProps) {
-  const meta = getProductMeta(product.id);
-  const battle = getBattleContext();
+  const firstStat =
+    launchStat.kind === "battle"
+      ? {
+          label: "Battle",
+          value: `Week ${launchStat.week}, ${launchStat.year}`,
+        }
+      : { label: "Created", value: launchStat.label };
+
+  const makerNote =
+    launchStat.kind === "battle"
+      ? `Submitted for Week ${launchStat.week} battle. One project per founder per week.`
+      : "Not entered in a battle yet. Publish to join the next available week.";
 
   return (
     <aside className="flex flex-col gap-4 lg:sticky lg:top-[4.5rem] lg:self-start">
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-zinc-900">Launch stats</h3>
         <dl className="mt-3 space-y-2.5 text-xs">
-          <StatRow label="Battle" value={`Week ${battle.week}, ${battle.year}`} />
+          <StatRow label={firstStat.label} value={firstStat.value} />
           <StatRow label="Votes" value={String(voteCount)} />
           <StatRow label="Comments" value={String(product.comments)} />
-          <StatRow label="Launched" value={meta.launchedAt} />
-          <StatRow label="Team" value={meta.teamSize} />
-          <StatRow label="Pricing" value={meta.pricing} />
         </dl>
       </div>
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-zinc-900">Maker</h3>
         <p className="mt-2 text-sm font-medium text-zinc-800">{product.maker}</p>
-        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          Submitted for Week {battle.week} battle. One project per founder per
-          week.
-        </p>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-500">{makerNote}</p>
         <a
           href={`https://${product.url}`}
           target="_blank"

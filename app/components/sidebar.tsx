@@ -1,18 +1,36 @@
+import Link from "next/link";
 import {
   hallOfFameEntries,
   hallOfFameMonth,
 } from "../lib/mock-data";
+import { AffiliateCopyLinkButton } from "@/app/components/affiliate-copy-link-button";
+import { SidebarPoll } from "@/app/components/sidebar-poll";
 import type { HomeBattleWeek } from "@/app/lib/battle-week-settings/get-home-battle-week";
+import type { HomePoll } from "@/app/lib/polls/poll-types";
 import { formatBattleStartHoursLabel } from "@/app/lib/battle-week-status";
 import {
-  formatDisplayPoints,
-} from "@/app/lib/site-settings/format-display-money";
+  formatAffiliateExchangeArrow,
+  formatAffiliateHomeSidebarBlurb,
+} from "@/app/lib/shop/format-shop-exchange-rate";
+import { formatDisplayPoints } from "@/app/lib/site-settings/format-display-money";
 
 type SidebarProps = {
   homeBattleWeek: HomeBattleWeek;
+  poll?: HomePoll | null;
+  isSignedIn?: boolean;
+  affiliatesEnabled?: boolean;
+  affiliatesPerPoint?: number;
+  affiliateLink?: string;
 };
 
-export async function Sidebar({ homeBattleWeek }: SidebarProps) {
+export async function Sidebar({
+  homeBattleWeek,
+  poll = null,
+  isSignedIn = false,
+  affiliatesEnabled = false,
+  affiliatesPerPoint,
+  affiliateLink,
+}: SidebarProps) {
   const { battle, battleStartHoursFromWeekStart, submitPrice } = homeBattleWeek;
   const entryFeeLabel = formatDisplayPoints(submitPrice);
   const battleStartHoursLabel = formatBattleStartHoursLabel(
@@ -21,6 +39,10 @@ export async function Sidebar({ homeBattleWeek }: SidebarProps) {
 
   return (
     <aside className="flex flex-col gap-4">
+      {poll ? (
+        <SidebarPoll initialPoll={poll} isSignedIn={isSignedIn} />
+      ) : null}
+
       <div id="how" className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-zinc-900">
           This week&apos;s battle rules
@@ -115,19 +137,28 @@ export async function Sidebar({ homeBattleWeek }: SidebarProps) {
         </ul>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-5">
-        <h3 className="text-sm font-semibold text-zinc-900">Points & affiliates</h3>
-        <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-          Earn 1 point per referred project. Spend on entry, promoted spots, or
-          save forever — no expiry.
-        </p>
-        <button
-          type="button"
-          className="mt-3 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-800 transition-colors hover:bg-zinc-50"
-        >
-          Affiliate
-        </button>
-      </div>
+      {affiliatesEnabled && affiliatesPerPoint !== undefined ? (
+        <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-5">
+          <h3 className="text-sm font-semibold text-zinc-900">Referrals & points</h3>
+          <p className="mt-2 text-xs font-medium text-zinc-700">
+            Shop rate: {formatAffiliateExchangeArrow(affiliatesPerPoint)}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+            {formatAffiliateHomeSidebarBlurb(affiliatesPerPoint, entryFeeLabel)}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/affiliates"
+              className="inline-flex rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-800 transition-colors hover:bg-zinc-50"
+            >
+              Affiliates
+            </Link>
+            {affiliateLink ? (
+              <AffiliateCopyLinkButton affiliateLink={affiliateLink} />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }

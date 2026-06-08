@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import type { ProductLaunchStat } from "@/app/lib/projects/get-product-page-data";
 import type { Product, ProductComment } from "../lib/types";
-import { CommentThread } from "./comment-thread";
+import { ProductCommentsSection } from "./product-comments-section";
 import { ProductDetailSidebar } from "./product-detail-sidebar";
 import { ProjectLogo } from "./project-logo";
 import { VoteButton } from "./vote-comment-buttons";
@@ -11,6 +12,12 @@ import { VoteButton } from "./vote-comment-buttons";
 type ProductDetailViewProps = {
   product: Product;
   comments: ProductComment[];
+  launchStat: ProductLaunchStat;
+  isSignedIn: boolean;
+  currentUserId: string | null;
+  currentUserAvatarUrl?: string | null;
+  currentUserName?: string | null;
+  commentsEnabled: boolean;
   logoImageUrl?: string | null;
   screenshotUrl?: string | null;
   backHref?: string;
@@ -21,6 +28,12 @@ type ProductDetailViewProps = {
 export function ProductDetailView({
   product,
   comments,
+  launchStat,
+  isSignedIn,
+  currentUserId,
+  currentUserAvatarUrl = null,
+  currentUserName = null,
+  commentsEnabled,
   logoImageUrl = null,
   screenshotUrl = null,
   backHref = "/",
@@ -29,6 +42,7 @@ export function ProductDetailView({
 }: ProductDetailViewProps) {
   const [voted, setVoted] = useState(false);
   const [voteCount, setVoteCount] = useState(product.votes);
+  const [commentCount, setCommentCount] = useState(product.comments);
   const [snapshotFailed, setSnapshotFailed] = useState(false);
 
   function toggleVote() {
@@ -95,7 +109,7 @@ export function ProductDetailView({
             </div>
             <div
               className="flex w-[52px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-zinc-200 bg-zinc-50 px-1 py-2 text-zinc-500 sm:w-[56px]"
-              aria-label={`${product.comments} comments`}
+              aria-label={`${commentCount} comments`}
             >
               <svg
                 className="h-4 w-4"
@@ -108,7 +122,7 @@ export function ProductDetailView({
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
               <span className="text-sm font-semibold tabular-nums text-zinc-800">
-                {product.comments}
+                {commentCount}
               </span>
             </div>
           </div>
@@ -134,39 +148,23 @@ export function ProductDetailView({
             </p>
           </section>
 
-          <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Comments
-                <span className="ml-2 text-base font-normal text-zinc-400">
-                  {product.comments}
-                </span>
-              </h2>
-            </div>
-
-            <div className="mt-4 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 p-4">
-              <textarea
-                placeholder="Add a comment… Sign in with Google to post"
-                rows={3}
-                disabled
-                className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-70"
-              />
-              <p className="mt-2 text-xs text-zinc-400">
-                Demo mode — connect Google account to join the discussion
-              </p>
-            </div>
-
-            {comments.length > 0 && (
-              <div className="mt-6">
-                <CommentThread comments={comments} />
-              </div>
-            )}
-          </section>
+          <ProductCommentsSection
+            projectId={product.id}
+            initialComments={comments}
+            initialCount={product.comments}
+            isSignedIn={isSignedIn}
+            currentUserId={currentUserId}
+            currentUserAvatarUrl={currentUserAvatarUrl}
+            currentUserName={currentUserName}
+            commentsEnabled={commentsEnabled}
+            onCommentCountChange={setCommentCount}
+          />
         </div>
 
         <ProductDetailSidebar
-          product={product}
+          product={{ ...product, comments: commentCount }}
           voteCount={voteCount}
+          launchStat={launchStat}
           siteName={siteName}
         />
       </div>

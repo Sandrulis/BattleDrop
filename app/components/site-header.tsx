@@ -1,9 +1,16 @@
 import Link from "next/link";
+import { getUserAvailableAffiliates } from "@/app/lib/affiliates/get-user-available-affiliates";
+import { isAffiliatesEnabled } from "@/app/lib/affiliates/is-affiliates-enabled";
+import { isShopEnabled } from "@/app/lib/shop/is-shop-enabled";
 import { getSiteMonogram, getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
+import { getUserCommentUpvoteCount } from "@/app/lib/product-comments";
+import { headerSubmitLinkClassName } from "./header-control-styles";
 import { HeaderActions } from "./header-actions";
+import { UserAffiliateBalance } from "./user-affiliate-balance";
+import { UserCommentUpvoteBalance } from "./user-comment-upvote-balance";
 import { UserPointsBalance } from "./user-points-balance";
 
 export async function SiteHeader() {
@@ -18,63 +25,68 @@ export async function SiteHeader() {
     user = authUser;
   }
 
-  const appUser = user ? await getCurrentAppUser() : null;
+  const [appUser, affiliatesEnabled, shopEnabled] = await Promise.all([
+    user ? getCurrentAppUser() : Promise.resolve(null),
+    isAffiliatesEnabled(),
+    isShopEnabled(),
+  ]);
+  const [commentUpvoteCount, availableAffiliates] = appUser
+    ? await Promise.all([
+        getUserCommentUpvoteCount(appUser.id),
+        affiliatesEnabled
+          ? getUserAvailableAffiliates(appUser.id)
+          : Promise.resolve(0),
+      ])
+    : [0, 0];
   const monogram = getSiteMonogram(siteName);
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-md">
       <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6">
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#da552f] text-sm font-bold text-white shadow-sm">
-            {monogram}
-          </span>
-          <span className="hidden truncate text-lg font-semibold tracking-tight text-zinc-900 min-[400px]:inline">
-            {siteName}
-          </span>
-        </Link>
-
-        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          <Link
-            href="/#month"
-            className="nav-month-link relative inline-flex items-center gap-1.5 rounded-md bg-[#da552f]/5 px-2.5 py-1 font-semibold text-[#da552f] transition-colors hover:bg-[#da552f]/10"
-            title="Monthly championship — voting open"
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#da552f] opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#da552f]" />
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+          <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#da552f] text-sm font-bold text-white shadow-sm">
+              {monogram}
             </span>
-            This Month
-          </Link>
-          <Link
-            href="/#battle"
-            className="text-zinc-600 transition-colors hover:text-zinc-900"
-          >
-            This week
+            <span className="hidden truncate text-lg font-semibold tracking-tight text-zinc-900 min-[400px]:inline">
+              {siteName}
+            </span>
           </Link>
           <Link
             href="/archive"
-            className="inline-flex items-center gap-1.5 text-zinc-600 transition-colors hover:text-zinc-900"
+            className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 md:inline-flex"
           >
             <CalendarIcon className="h-4 w-4 shrink-0 opacity-70" />
             Archive
           </Link>
-        </nav>
+        </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/submit"
-            className="hidden cursor-pointer rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 md:inline-flex"
-          >
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Link href="/submit" className={`${headerSubmitLinkClassName} hidden md:inline-flex`}>
+            <i className="fas fa-plus text-[11px] text-zinc-500" aria-hidden />
             Submit product
           </Link>
           {appUser ? (
-            <UserPointsBalance points={appUser.points} />
+            <div className="hidden items-center gap-2 md:flex">
+              <UserPointsBalance points={appUser.points} />
+              <UserCommentUpvoteBalance count={commentUpvoteCount} />
+              {affiliatesEnabled ? (
+                <UserAffiliateBalance count={availableAffiliates} />
+              ) : null}
+            </div>
           ) : null}
           <HeaderActions
             user={user}
             isAdmin={appUser?.is_admin ?? false}
+            affiliatesEnabled={affiliatesEnabled}
+            shopEnabled={shopEnabled}
             avatarUrl={appUser?.avatar_url}
             displayName={appUser?.full_name}
+            points={appUser?.points}
+            commentUpvoteCount={appUser ? commentUpvoteCount : undefined}
+            availableAffiliates={
+              appUser && affiliatesEnabled ? availableAffiliates : undefined
+            }
           />
         </div>
       </div>

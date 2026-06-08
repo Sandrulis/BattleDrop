@@ -14,16 +14,15 @@ import {
   getCountdownTo,
   type CountdownState,
 } from "../lib/countdown";
-import { formatBattleWeekRange } from "../lib/battle-week";
 import { formatDisplayPoints } from "../lib/site-settings/format-display-money";
 import type { Battle } from "../lib/types";
-import { useSiteDateSettings } from "./site-date-settings-provider";
 
 type BattleHeroProps = {
   battle: Battle;
   battleStartHoursFromWeekStart: number;
   submitPrice: number;
   timing: BattleWeekTiming;
+  weekRangeLabel: string;
 };
 
 type BattleHeroCountdown = {
@@ -37,8 +36,8 @@ export function BattleHero({
   battleStartHoursFromWeekStart,
   submitPrice,
   timing,
+  weekRangeLabel,
 }: BattleHeroProps) {
-  const dateSettings = useSiteDateSettings();
   const minProjectsMet =
     battle.minProjectsEnabled &&
     battle.projectsSubmitted >= battle.projectsRequired;
@@ -106,9 +105,7 @@ export function BattleHero({
                 · {formatDisplayPoints(submitPrice)} per submit
               </span>
             </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {formatBattleWeekRange(battle.week, battle.year, dateSettings)}
-            </p>
+            <p className="mt-1 text-sm text-zinc-500">{weekRangeLabel}</p>
           </div>
 
           <div className="flex flex-col items-end gap-2">

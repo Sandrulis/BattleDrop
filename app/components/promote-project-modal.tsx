@@ -5,12 +5,14 @@ import {
   type PromotedSlotDefinition,
 } from "@/app/lib/promoted-slots/constants";
 import { PointsBalanceLink } from "@/app/components/points-balance-link";
+import { formatPromoteDurationLabel } from "@/app/lib/promoted-slots/promote-duration";
 import { formatDisplayPoints } from "@/app/lib/site-settings/format-display-money";
 
 type PromoteProjectModalProps = {
   projectName: string;
   bookedSpots: number[];
   userPointsBalance: number;
+  promoteDurationHours: number;
   open: boolean;
   loading: boolean;
   selectedSpot: number | null;
@@ -29,6 +31,7 @@ export function PromoteProjectModal({
   projectName,
   bookedSpots,
   userPointsBalance,
+  promoteDurationHours,
   open,
   loading,
   selectedSpot,
@@ -59,7 +62,8 @@ export function PromoteProjectModal({
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
           Choose a promoted spot for this week&apos;s leaderboard. Promoted entries
-          keep their real vote rank but appear in a highlighted position.
+          keep their real vote rank but appear in a highlighted position for{" "}
+          {formatPromoteDurationLabel(promoteDurationHours)}.
         </p>
 
         <div className="mt-5 space-y-2">

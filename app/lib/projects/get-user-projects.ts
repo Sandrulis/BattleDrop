@@ -57,5 +57,10 @@ export async function getUserProjects(): Promise<UserProject[]> {
 
   if (error || !rows) return [];
 
-  return rows.map((row) => normalizeUserProject(row));
+  return rows
+    .map((row) => normalizeUserProject(row))
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
 }

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { headerBalanceBadgeClassName } from "@/app/components/header-control-styles";
+import { Tooltip } from "@/app/components/tooltip";
 import {
   formatDisplayPoints,
   formatPointsAmount,
@@ -14,8 +16,7 @@ type PointsBalanceLinkProps = {
   variant?: "badge" | "inline" | "display";
 };
 
-const badgeClassName =
-  "inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700";
+const badgeClassName = headerBalanceBadgeClassName;
 
 function PointsBalanceContent({ points }: { points: number }) {
   return (
@@ -62,12 +63,14 @@ export function PointsBalanceLink({
   }
 
   return (
-    <Link
-      href={href}
-      className={`${badgeClassName} cursor-pointer transition-colors hover:border-[#da552f]/30 hover:bg-[#da552f]/5`}
-      aria-label={`${formatPointsAmount(points)} points — buy more`}
-    >
-      <PointsBalanceContent points={points} />
-    </Link>
+    <Tooltip label="Points" cursorHelp={false}>
+      <Link
+        href={href}
+        className={`${badgeClassName} cursor-pointer transition-colors hover:border-[#da552f]/30 hover:bg-[#da552f]/5`}
+        aria-label={`${formatPointsAmount(points)} points — buy more`}
+      >
+        <PointsBalanceContent points={points} />
+      </Link>
+    </Tooltip>
   );
 }

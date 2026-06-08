@@ -1,4 +1,5 @@
 import { formatMakerHandle } from "@/app/lib/projects/format-maker-handle";
+import { resolveProjectBattleWeek } from "@/app/lib/projects/project-battle-week";
 import {
   displayUrlFromProjectUrl,
   userProjectToPreviewProduct,
@@ -19,10 +20,13 @@ export function projectToProduct(
     project,
     formatMakerHandle(owner),
   );
+  const battleWeek = resolveProjectBattleWeek(project);
 
   return {
     ...preview,
     rank,
     url: displayUrlFromProjectUrl(project.url),
+    battleYear: battleWeek?.year ?? project.battle_year,
+    battleIsoWeek: battleWeek?.week ?? project.battle_iso_week,
   };
 }
