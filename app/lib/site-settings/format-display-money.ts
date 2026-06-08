@@ -1,7 +1,6 @@
 import {
   DEFAULT_SITE_SETTINGS,
   formatSiteMoney,
-  getCurrencySymbol,
   isCurrencyCode,
   type CurrencyCode,
 } from "@/app/lib/site-settings-types";

@@ -36,6 +36,7 @@ export function ProductCommentsSection({
   const { toast, showToast, dismissToast } = useToast();
   const [comments, setComments] = useState(initialComments);
   const [commentCount, setCommentCount] = useState(initialCount);
+  const [syncedProjectId, setSyncedProjectId] = useState(projectId);
   const [body, setBody] = useState("");
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
@@ -45,10 +46,11 @@ export function ProductCommentsSection({
     null,
   );
 
-  useEffect(() => {
+  if (projectId !== syncedProjectId) {
+    setSyncedProjectId(projectId);
     setComments(initialComments);
     setCommentCount(initialCount);
-  }, [initialComments, initialCount]);
+  }
 
   useEffect(() => {
     onCommentCountChange?.(commentCount);

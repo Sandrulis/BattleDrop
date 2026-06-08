@@ -1,6 +1,5 @@
 import {
   DEFAULT_SITE_SETTINGS,
-  formatSiteDateTime,
   formatSiteDateTimeValue,
   formatSiteDateValue,
   type SiteDateTimeSettings,

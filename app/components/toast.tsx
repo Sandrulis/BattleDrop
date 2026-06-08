@@ -67,7 +67,7 @@ export function Toast({ toast, onDismiss, durationMs = DEFAULT_DURATION_MS }: To
     scheduleDismiss();
 
     return clearTimer;
-  }, [toast?.id, durationMs, scheduleDismiss]);
+  }, [toast, durationMs, scheduleDismiss]);
 
   if (!toast) return null;
 

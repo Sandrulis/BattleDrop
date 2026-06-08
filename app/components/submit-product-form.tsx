@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthButton } from "@/app/components/auth-button";
 import { signInWithGoogle } from "@/app/lib/auth/sign-in-with-google";
 import { Toast, useToast } from "@/app/components/toast";
@@ -145,23 +145,26 @@ export function SubmitProductForm({
     return { status: "saved" };
   };
 
-  const handleSaveResult = (result: SaveProjectResult) => {
-    if (result.status === "error") {
-      showToast(result.message, "error");
-      return;
-    }
+  const handleSaveResult = useCallback(
+    (result: SaveProjectResult) => {
+      if (result.status === "error") {
+        showToast(result.message, "error");
+        return;
+      }
 
-    clearPendingDraft();
+      clearPendingDraft();
 
-    if (result.status === "skipped") {
-      showToast(result.message, "error");
-      return;
-    }
+      if (result.status === "skipped") {
+        showToast(result.message, "error");
+        return;
+      }
 
-    showToast("Project saved.", "success");
-    router.push("/my-projects");
-    router.refresh();
-  };
+      showToast("Project saved.", "success");
+      router.push("/my-projects");
+      router.refresh();
+    },
+    [router, showToast],
+  );
 
   useEffect(() => {
     if (!isSignedIn || isEditing || autoSaveStarted.current) return;
@@ -191,7 +194,7 @@ export function SubmitProductForm({
           setSaving(false);
         });
     });
-  }, [isSignedIn, isEditing]);
+  }, [isSignedIn, isEditing, handleSaveResult, showToast]);
 
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

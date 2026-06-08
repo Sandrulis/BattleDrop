@@ -3,7 +3,7 @@
 Weekly product battles for early-stage founders. Community votes, promoted leaderboard spots, and a Product Hunt–style feed — Next.js frontend with Supabase auth, project submissions, and admin tooling.
 
 **Repository:** [github.com/Sandrulis/BattleDrop](https://github.com/Sandrulis/BattleDrop)  
-**Current version:** `0.1.27` (see [Changelog](#changelog))
+**Current version:** `0.1.28` (see [Changelog](#changelog))
 
 ---
 
@@ -661,6 +661,15 @@ Summary of what shipped in each release (newest first).
 ### Unreleased
 
 - (none)
+
+### v0.1.28
+
+**CI lint fixes**
+
+- **`product-comments-section.tsx`** — reset comment state when `projectId` changes during render (avoids `set-state-in-effect` ESLint error)
+- **`submit-product-form.tsx`** — `handleSaveResult` wrapped in `useCallback` for stable effect deps
+- **`toast.tsx`**, **`admin-battle-week-settings-modal.tsx`** — exhaustive-deps hook dependency fixes
+- **Unused imports/vars** — `format-display-date.ts`, `format-display-money.ts`, `site-settings-types.ts`
 
 ### v0.1.27
 

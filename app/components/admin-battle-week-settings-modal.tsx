@@ -107,7 +107,7 @@ export function AdminBattleWeekSettingsModal({
     return () => {
       cancelled = true;
     };
-  }, [open, week, year, defaultSubmitPrice]);
+  }, [open, week, year, defaultSubmitPrice, showToast]);
 
   const handleClose = () => {
     if (saving) return;
