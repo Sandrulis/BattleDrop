@@ -1,4 +1,3 @@
-import { formatMakerHandle } from "@/app/lib/projects/format-maker-handle";
 import { projectToProduct } from "@/app/lib/projects/project-to-product";
 import {
   isMissingBattleWeekColumnError,

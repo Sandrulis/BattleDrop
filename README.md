@@ -3,7 +3,7 @@
 Weekly product battles for early-stage founders. Community votes, promoted leaderboard spots, and a Product Hunt–style feed — Next.js frontend with Supabase auth, project submissions, and admin tooling.
 
 **Repository:** [github.com/Sandrulis/BattleDrop](https://github.com/Sandrulis/BattleDrop)  
-**Current version:** `0.1.36` (see [Changelog](#changelog))
+**Current version:** `0.1.37` (see [Changelog](#changelog))
 
 ---
 
@@ -723,7 +723,7 @@ Version follows `package.json` (`semver`). Every commit message ends with the ve
 Short description of the change. v0.1.13
 ```
 
-Bump the version in `package.json` when the change is user-facing or notable. Current: `0.1.36`.
+Bump the version in `package.json` when the change is user-facing or notable. Current: `0.1.37`.
 
 When the user asks to **update README**, follow `.cursor/rules/readme-version-update.mdc`: bump version, move `Unreleased` → new changelog section, list all improvements since the last version.
 
@@ -738,6 +738,16 @@ Summary of what shipped in each release (newest first).
 ### Unreleased
 
 - (none)
+
+### v0.1.37
+
+**CI lint fixes**
+
+- **`admin-alert-counts-provider.tsx`** — sync alert counts from server props during render (avoids `set-state-in-effect`)
+- **`cookie-consent-provider.tsx`** — first-visit auto-open via `queueMicrotask`; popup remount `key` for preference resets
+- **`cookie-consent-popup.tsx`** — drop redundant preferences sync effect
+- **`site-footer.tsx`** — internal nav uses `next/link` (`@next/next/no-html-link-for-pages`)
+- **`fetch-year-projects.ts`** — remove unused `formatMakerHandle` import
 
 ### v0.1.36
 

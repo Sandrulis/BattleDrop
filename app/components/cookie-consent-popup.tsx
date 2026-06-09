@@ -64,10 +64,6 @@ export function CookieConsentPopup({
     useState<CookiePreferences>(initialPreferences);
 
   useEffect(() => {
-    setPreferences(initialPreferences);
-  }, [initialPreferences]);
-
-  useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {

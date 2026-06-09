@@ -3,7 +3,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -29,10 +28,19 @@ export function AdminAlertCountsProvider({
   children,
 }: AdminAlertCountsProviderProps) {
   const [counts, setCounts] = useState(initialCounts);
+  const [syncedSupport, setSyncedSupport] = useState(initialCounts.support);
+  const [syncedSuggestions, setSyncedSuggestions] = useState(
+    initialCounts.suggestions,
+  );
 
-  useEffect(() => {
+  if (
+    initialCounts.support !== syncedSupport ||
+    initialCounts.suggestions !== syncedSuggestions
+  ) {
+    setSyncedSupport(initialCounts.support);
+    setSyncedSuggestions(initialCounts.suggestions);
     setCounts(initialCounts);
-  }, [initialCounts.support, initialCounts.suggestions]);
+  }
 
   const value = useMemo<AdminAlertCountsContextValue>(
     () => ({

@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { CookieConsentFab } from "@/app/components/cookie-consent-fab";
@@ -41,7 +42,7 @@ export function CookieConsentProvider({
   const [preferences, setPreferences] = useState<CookiePreferences>(
     DEFAULT_COOKIE_PREFERENCES,
   );
-  const [autoChecked, setAutoChecked] = useState(false);
+  const consentCheckedRef = useRef(false);
 
   useEffect(() => {
     const stored = getCookiePreferences();
@@ -51,15 +52,17 @@ export function CookieConsentProvider({
   }, []);
 
   useEffect(() => {
-    if (!cookieContent || autoChecked) return;
+    if (!cookieContent || consentCheckedRef.current) return;
 
-    setAutoChecked(true);
+    consentCheckedRef.current = true;
 
     if (!hasCookieConsentBeenSeen()) {
-      setRequireChoice(true);
-      setOpen(true);
+      queueMicrotask(() => {
+        setRequireChoice(true);
+        setOpen(true);
+      });
     }
-  }, [cookieContent, autoChecked]);
+  }, [cookieContent]);
 
   const openCookiePopup = useCallback(() => {
     if (!cookieContent) return;
@@ -100,6 +103,7 @@ export function CookieConsentProvider({
       {cookieContent ? <CookieConsentFab onClick={openCookiePopup} /> : null}
       {cookieContent && open ? (
         <CookieConsentPopup
+          key={`${preferences.functional}-${preferences.analytics}-${preferences.marketing}`}
           initialPreferences={preferences}
           showPrivacyLink={showPrivacyLink}
           requireChoice={requireChoice}

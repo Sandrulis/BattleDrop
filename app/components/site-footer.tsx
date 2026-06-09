@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getSiteSettings } from "@/app/lib/site-settings/get-site-settings";
 import { hasPublishedBlogArticles } from "@/app/lib/blog/get-published-blog-articles";
 import {
@@ -24,34 +25,34 @@ export async function SiteFooter() {
         </p>
         <div className="flex flex-wrap justify-center gap-6 text-xs font-medium text-zinc-500 sm:justify-end">
           {showBlog ? (
-            <a href="/blog" className="hover:text-zinc-800">
+            <Link href="/blog" className="hover:text-zinc-800">
               Blog
-            </a>
+            </Link>
           ) : null}
           {showPrivacy ? (
-            <a href="/privacy" className="hover:text-zinc-800">
+            <Link href="/privacy" className="hover:text-zinc-800">
               Privacy
-            </a>
+            </Link>
           ) : null}
           {showRules ? (
-            <a href="/rules" className="hover:text-zinc-800">
+            <Link href="/rules" className="hover:text-zinc-800">
               Rules
-            </a>
+            </Link>
           ) : null}
           {showCookie ? (
-            <a href="/cookie" className="hover:text-zinc-800">
+            <Link href="/cookie" className="hover:text-zinc-800">
               Cookie
-            </a>
+            </Link>
           ) : null}
-          <a href="/support" className="hover:text-zinc-800">
+          <Link href="/support" className="hover:text-zinc-800">
             Support
-          </a>
-          <a href="/suggestions" className="hover:text-zinc-800">
+          </Link>
+          <Link href="/suggestions" className="hover:text-zinc-800">
             Suggestions
-          </a>
-          <a href="/submit" className="hover:text-zinc-800">
+          </Link>
+          <Link href="/submit" className="hover:text-zinc-800">
             Submit
-          </a>
+          </Link>
         </div>
       </div>
     </footer>
