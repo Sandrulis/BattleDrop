@@ -79,45 +79,26 @@ export function ProductFeed({
       : buildLeaderboard(withVotes, activePromotedSlots);
   }, [initialProducts, voteDeltas, shuffleBeforeVoting, activePromotedSlots]);
 
-
-
   function toggleVote(id: string) {
     if (!votingOpen) return;
 
     setVotedIds((prev) => {
-
       const next = new Set(prev);
-
       if (next.has(id)) {
-
         next.delete(id);
-
         setVoteDeltas((d) => ({ ...d, [id]: (d[id] ?? 0) - 1 }));
-
       } else {
-
         next.add(id);
-
         setVoteDeltas((d) => ({ ...d, [id]: (d[id] ?? 0) + 1 }));
-
       }
-
       return next;
-
     });
-
   }
 
-
-
   return (
-
     <section aria-label="Product leaderboard">
-
       <div className="mb-3 flex items-center justify-between">
-
         <h2 className="text-sm font-semibold text-zinc-900">This Week&apos;s leaderboard</h2>
-
         <p className="text-xs text-zinc-500">
           {entries.length} projects
           {shuffleBeforeVoting
@@ -127,10 +108,7 @@ export function ProductFeed({
             {votingOpen ? " · sign in to vote" : " · voting opens soon"}
           </span>
         </p>
-
       </div>
-
-
 
       {initialProducts.length === 0 ? (
         <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-14 text-center">
@@ -168,23 +146,14 @@ export function ProductFeed({
         </ol>
       )}
     </section>
-
   );
-
 }
 
-
-
 type ProductRowProps = {
-
   product: DisplayProduct;
-
   organicRank: number | null;
-
   voteRank: number;
-
   voted: boolean;
-
   onVote: () => void;
   votingOpen: boolean;
   promoted?: boolean;
@@ -203,46 +172,32 @@ function ProductRow({
   promoteExpiresAt,
   showPromoteCountdown = false,
 }: ProductRowProps) {
+  const productHref = `/products/${product.id}`;
 
   return (
-
     <li
-
       id={promoted ? `promoted-row-${product.id}` : undefined}
-
-      className={`group grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-xl border p-2.5 transition-shadow sm:gap-4 sm:p-4 ${
-
+      className={`group relative grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-2 rounded-xl border p-2.5 transition-shadow sm:gap-4 sm:p-4 ${
         promoted
-
           ? "promoted-row"
-
           : "border-zinc-200 bg-white hover:border-zinc-300 hover:shadow-sm"
-
       }`}
-
     >
+      <Link
+        href={productHref}
+        className="absolute inset-0 z-0 rounded-xl"
+        aria-label={`View ${product.name}`}
+      />
 
       <VoteButton
         count={product.displayVotes}
         voted={voted}
         onClick={onVote}
         disabled={!votingOpen}
+        className="relative z-10"
       />
 
-
-
-      <Link
-
-        href={`/products/${product.id}`}
-
-        className={`flex min-h-[44px] min-w-0 gap-2.5 rounded-lg py-0.5 transition-colors sm:gap-4 ${
-
-          promoted ? "promoted-row__link" : "active:bg-zinc-50/80 sm:hover:bg-zinc-50/80"
-
-        }`}
-
-      >
-
+      <div className="relative z-10 flex min-h-[44px] min-w-0 gap-2.5 py-0.5 pointer-events-none sm:gap-4">
         <ProjectLogo
           name={product.name}
           faviconUrl={product.faviconUrl}
@@ -250,26 +205,16 @@ function ProductRow({
           logoBg={product.logoBg}
         />
 
-
-
         <div className="min-w-0 flex-1 py-0.5">
-
           <div className="flex flex-wrap items-center gap-2">
-
             <span
-
               className={promoted ? "promoted-rank" : "text-xs font-medium text-zinc-400"}
-
             >
-
               #{promoted ? voteRank : organicRank}
-
             </span>
 
             <h3 className="truncate text-base font-semibold text-zinc-900 group-hover:text-[#da552f]">
-
               {product.name}
-
             </h3>
 
             {promoted && (
@@ -282,53 +227,31 @@ function ProductRow({
                 ) : null}
               </span>
             )}
-
           </div>
 
           <p className="mt-0.5 line-clamp-2 text-sm text-zinc-600 sm:line-clamp-1">
-
             {product.tagline}
-
           </p>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-zinc-500">
-
             <span
-
               role="link"
-
               tabIndex={0}
-
               onClick={(e) => {
-
                 e.preventDefault();
-
                 e.stopPropagation();
-
                 window.open(`https://${product.url}`, "_blank", "noopener,noreferrer");
-
               }}
-
               onKeyDown={(e) => {
-
                 if (e.key === "Enter" || e.key === " ") {
-
                   e.preventDefault();
-
                   e.stopPropagation();
-
                   window.open(`https://${product.url}`, "_blank", "noopener,noreferrer");
-
                 }
-
               }}
-
-              className="font-medium text-zinc-700 underline-offset-2 hover:text-[#da552f] hover:underline"
-
+              className="pointer-events-auto cursor-pointer font-medium text-zinc-700 underline-offset-2 hover:text-[#da552f] hover:underline"
             >
-
               {product.url}
-
             </span>
 
             <span className="hidden text-zinc-300 sm:inline">·</span>
@@ -336,44 +259,23 @@ function ProductRow({
             <span>{product.maker}</span>
 
             {product.topics.map((topic) => (
-
               <span
-
                 key={topic}
-
                 className="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600"
-
               >
-
                 {topic}
-
               </span>
-
             ))}
-
           </div>
-
         </div>
-
-      </Link>
-
-
+      </div>
 
       <CommentButton
-
         count={product.comments}
-
         itemName={product.name}
-
-        href={`/products/${product.id}`}
-
-        className="justify-self-end"
-
+        href={productHref}
+        className="relative z-10 justify-self-end"
       />
-
     </li>
-
   );
-
 }
-

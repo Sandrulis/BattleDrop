@@ -13,7 +13,13 @@ export type AdminAuditAction =
   | "site_integration.delete"
   | "site_poll.create"
   | "site_poll.update"
-  | "shop_settings.update";
+  | "shop_settings.update"
+  | "support_ticket.update_status"
+  | "user_suggestion.update_status"
+  | "blog_article.create"
+  | "blog_article.update"
+  | "blog_article.delete"
+  | "site_legal_pages.update";
 
 type LogAdminActionInput = {
   actorId: string;

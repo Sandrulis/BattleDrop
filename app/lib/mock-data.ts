@@ -242,6 +242,21 @@ export const products: Product[] = [
     votes: 54,
     comments: 3,
   },
+  {
+    id: "16",
+    rank: 16,
+    name: "Flowstate",
+    tagline: "Deep work sessions that actually stick",
+    description:
+      "Flowstate blocks distractions, tracks focus streaks, and syncs your best hours across devices. Built for indie makers who ship in sprints and need a ritual that keeps them in the zone.",
+    url: "flowstate.app",
+    logo: "F",
+    logoBg: "#9333ea",
+    topics: ["Productivity", "SaaS"],
+    maker: "@alex_f",
+    votes: 412,
+    comments: 28,
+  },
 ];
 
 export function getProductById(id: string): Product | undefined {
@@ -251,6 +266,27 @@ export function getProductById(id: string): Product | undefined {
 export function getProductIdByName(name: string): string | undefined {
   return products.find((p) => p.name === name)?.id;
 }
+
+export const yearlyBattle = {
+  year: 2026,
+  phase: "voting" as const,
+  votingOpensAt: "2026-01-01T00:00:00Z",
+  votingEndsAt: "2026-12-31T23:59:59Z",
+  contenders: [
+    { id: "y1", name: "Scoutboard", monthLabel: "January", votes: 1842, comments: 124 },
+    { id: "y2", name: "Nestform", monthLabel: "February", votes: 1765, comments: 98 },
+    { id: "y3", name: "Driftnote", monthLabel: "March", votes: 1698, comments: 87 },
+    { id: "y4", name: "Patchlane", monthLabel: "April", votes: 1588, comments: 76 },
+    { id: "y5", name: "Ledgerly", monthLabel: "May", votes: 1521, comments: 71 },
+    { id: "y6", name: "OrbitKit", monthLabel: "June", votes: 1464, comments: 68 },
+    { id: "y7", name: "Warmline", monthLabel: "July", votes: 1392, comments: 62 },
+    { id: "y8", name: "Formpath", monthLabel: "August", votes: 1318, comments: 58 },
+    { id: "y9", name: "Pingboard", monthLabel: "September", votes: 1244, comments: 51 },
+    { id: "y10", name: "Codemap", monthLabel: "October", votes: 1176, comments: 47 },
+    { id: "y11", name: "Briefly", monthLabel: "November", votes: 1102, comments: 42 },
+    { id: "y12", name: "Launchpad", monthLabel: "December", votes: 1038, comments: 39 },
+  ],
+};
 
 export const monthlyBattle = {
   month: "June",

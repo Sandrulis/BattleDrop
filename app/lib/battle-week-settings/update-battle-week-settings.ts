@@ -13,6 +13,7 @@ export type UpdateBattleWeekSettingsInput = {
   minProjectsEnabled?: boolean;
   minProjects?: number | null;
   submitPrice?: number | null;
+  winnerMoneyPrice?: number | null;
 };
 
 function parseWeek(value: number) {
@@ -46,6 +47,25 @@ function parseMinProjects(value: unknown): number | null {
   }
 
   return parsed;
+}
+
+function parseWinnerMoneyPrice(value: unknown): number {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error("Winner prize must be zero or greater.");
+  }
+
+  return Math.round(parsed * 100) / 100;
 }
 
 function parseSubmitPrice(value: unknown): number | null {
@@ -87,6 +107,11 @@ export function normalizeBattleWeekSettingsInput(
     }
   }
 
+  const winnerMoneyPrice =
+    isEnabled && input.winnerMoneyPrice !== undefined
+      ? parseWinnerMoneyPrice(input.winnerMoneyPrice)
+      : 0;
+
   return {
     year: 0,
     week: 0,
@@ -94,6 +119,7 @@ export function normalizeBattleWeekSettingsInput(
     minProjectsEnabled,
     minProjects,
     submitPrice,
+    winnerMoneyPrice,
   };
 }
 
@@ -124,7 +150,8 @@ export async function updateBattleWeekSettings(
     settings.isEnabled === defaults.isEnabled &&
     settings.minProjectsEnabled === defaults.minProjectsEnabled &&
     settings.minProjects === defaults.minProjects &&
-    settings.submitPrice === defaults.submitPrice;
+    settings.submitPrice === defaults.submitPrice &&
+    settings.winnerMoneyPrice === defaults.winnerMoneyPrice;
 
   if (isDefault) {
     await admin
@@ -141,6 +168,7 @@ export async function updateBattleWeekSettings(
         min_projects_enabled: settings.minProjectsEnabled,
         min_projects: settings.minProjects,
         submit_price: settings.submitPrice,
+        winner_money_price: settings.winnerMoneyPrice,
       },
       { onConflict: "year,iso_week" },
     );
@@ -160,6 +188,7 @@ export async function updateBattleWeekSettings(
       minProjectsEnabled: settings.minProjectsEnabled,
       minProjects: settings.minProjects,
       submitPrice: settings.submitPrice,
+      winnerMoneyPrice: settings.winnerMoneyPrice,
     },
   });
 

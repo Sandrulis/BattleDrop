@@ -8,7 +8,8 @@ import {
   getYearWeeksWithEntries,
   getYearsWithEntries,
 } from "./admin-battles/get-records";
-import { formatDisplayPoints } from "./site-settings/format-display-money";
+import { formatDisplayMoney, formatDisplayPoints } from "./site-settings/format-display-money";
+import type { CurrencyCode } from "./site-settings-types";
 import type { SiteDateTimeSettings } from "@/app/lib/site-settings-types";
 
 const MONTH_NAMES = [
@@ -75,6 +76,8 @@ export type AdminWeekBlock = {
   minProjectsEnabled: boolean;
   minProjects: number | null;
   submitPriceLabel: string;
+  winnerMoneyPrice: number;
+  winnerMoneyPriceLabel: string | null;
 };
 
 export type AdminMonthBlock = {
@@ -105,6 +108,7 @@ export function getAdminYearWeeks(
   options: {
     settingsByWeek: Map<number, BattleWeekSettings>;
     defaultSubmitPrice: number;
+    defaultCurrency: CurrencyCode;
   },
 ): AdminWeekBlock[] {
   return Array.from({ length: WEEKS_PER_YEAR }, (_, index) => {
@@ -126,6 +130,14 @@ export function getAdminYearWeeks(
       minProjectsEnabled: weekSettings.minProjectsEnabled,
       minProjects: weekSettings.minProjects,
       submitPriceLabel: formatDisplayPoints(weekSettings.effectiveSubmitPrice),
+      winnerMoneyPrice: weekSettings.effectiveWinnerMoneyPrice,
+      winnerMoneyPriceLabel:
+        weekSettings.effectiveWinnerMoneyPrice > 0
+          ? formatDisplayMoney(
+              weekSettings.effectiveWinnerMoneyPrice,
+              options.defaultCurrency,
+            )
+          : null,
     };
   });
 }

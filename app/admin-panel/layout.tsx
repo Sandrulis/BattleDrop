@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AdminAlertCountsProvider } from "@/app/components/admin-alert-counts-provider";
 import { AdminPanelNav } from "@/app/components/admin-panel-nav";
 import { SiteFooter } from "@/app/components/site-footer";
 import { SiteHeader } from "@/app/components/site-header";
+import { getAdminAlertCounts } from "@/app/lib/admin-alerts/get-admin-alert-counts";
 import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
 
 export const metadata: Metadata = {
@@ -14,17 +16,22 @@ export default async function AdminPanelLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentAppUser();
+  const [user, alertCounts] = await Promise.all([
+    getCurrentAppUser(),
+    getAdminAlertCounts(),
+  ]);
   if (!user?.is_admin) redirect("/");
 
   return (
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
-          <AdminPanelNav />
-          <div className="min-w-0">{children}</div>
-        </div>
+        <AdminAlertCountsProvider initialCounts={alertCounts}>
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
+            <AdminPanelNav />
+            <div className="min-w-0">{children}</div>
+          </div>
+        </AdminAlertCountsProvider>
       </main>
       <SiteFooter />
     </>

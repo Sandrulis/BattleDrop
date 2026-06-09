@@ -3,11 +3,14 @@
 import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { signInWithGoogle } from "@/app/lib/auth/sign-in-with-google";
+import type { AdminAlertCounts } from "@/app/lib/admin-alerts/admin-alert-types";
+import { headerAuthButtonClassName } from "@/app/components/header-control-styles";
 import { UserMenu } from "./user-menu";
 
 type AuthButtonProps = {
   user: User | null;
   isAdmin?: boolean;
+  adminAlertCounts?: AdminAlertCounts;
   affiliatesEnabled?: boolean;
   shopEnabled?: boolean;
   avatarUrl?: string | null;
@@ -27,6 +30,7 @@ type AuthButtonProps = {
 export function AuthButton({
   user,
   isAdmin = false,
+  adminAlertCounts,
   affiliatesEnabled = false,
   shopEnabled = false,
   avatarUrl,
@@ -65,6 +69,7 @@ export function AuthButton({
       <UserMenu
         user={user}
         isAdmin={isAdmin}
+        adminAlertCounts={adminAlertCounts}
         affiliatesEnabled={affiliatesEnabled}
         shopEnabled={shopEnabled}
         avatarUrl={avatarUrl}
@@ -79,9 +84,7 @@ export function AuthButton({
     );
   }
 
-  const buttonClassName =
-    className ??
-    "inline-flex h-9 cursor-pointer items-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-60 sm:h-auto sm:px-3.5";
+  const buttonClassName = className ?? headerAuthButtonClassName;
 
   return (
     <button

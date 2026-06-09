@@ -11,10 +11,16 @@ import { UserAffiliateBalance } from "@/app/components/user-affiliate-balance";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { UserCommentUpvoteBalance } from "@/app/components/user-comment-upvote-balance";
 import { UserPointsBalance } from "@/app/components/user-points-balance";
+import { AdminCountBadge } from "@/app/components/admin-count-badge";
+import {
+  getTotalAdminAlertCount,
+  type AdminAlertCounts,
+} from "@/app/lib/admin-alerts/admin-alert-types";
 
 type UserMenuProps = {
   user: User;
   isAdmin: boolean;
+  adminAlertCounts?: AdminAlertCounts;
   affiliatesEnabled?: boolean;
   shopEnabled?: boolean;
   avatarUrl?: string | null;
@@ -30,6 +36,7 @@ type UserMenuProps = {
 export function UserMenu({
   user,
   isAdmin,
+  adminAlertCounts,
   affiliatesEnabled = false,
   shopEnabled = false,
   avatarUrl,
@@ -68,6 +75,9 @@ export function UserMenu({
 
   const menuItemClassName =
     "flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-900 md:rounded-none md:px-3.5 md:py-2";
+  const adminAlertTotal = adminAlertCounts
+    ? getTotalAdminAlertCount(adminAlertCounts)
+    : 0;
 
   const menuItems = (
     <>
@@ -116,10 +126,13 @@ export function UserMenu({
           href="/admin-panel"
           role="menuitem"
           onClick={onClose}
-          className={menuItemClassName}
+          className={`${menuItemClassName} justify-between`}
         >
-          <MenuIcon icon="fa-gauge-high" />
-          Admin Panel
+          <span className="flex items-center gap-2.5">
+            <MenuIcon icon="fa-gauge-high" />
+            Admin Panel
+          </span>
+          <AdminCountBadge count={adminAlertTotal} />
         </Link>
       )}
       <button

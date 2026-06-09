@@ -1,4 +1,10 @@
 import type { Metadata } from "next";
+import { getCurrentIsoWeek } from "@/app/lib/battle-week";
+import { getHomeBattleWeek } from "@/app/lib/battle-week-settings/get-home-battle-week";
+import {
+  getArchiveYearData,
+  getAvailableArchiveYears,
+} from "@/app/lib/archive";
 import { ArchiveCalendar } from "../components/archive-calendar";
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
@@ -8,7 +14,27 @@ export const metadata: Metadata = {
   description: "Browse weekly battle winners for every week of the year.",
 };
 
-export default function ArchivePage() {
+type ArchivePageProps = {
+  searchParams: Promise<{ year?: string }>;
+};
+
+export default async function ArchivePage({ searchParams }: ArchivePageProps) {
+  const { year: yearParam } = await searchParams;
+  const { year: currentYear } = getCurrentIsoWeek();
+
+  const [years, homeBattleWeek] = await Promise.all([
+    getAvailableArchiveYears(),
+    getHomeBattleWeek(),
+  ]);
+
+  const parsedYear = yearParam ? Number.parseInt(yearParam, 10) : currentYear;
+  const year =
+    Number.isFinite(parsedYear) && years.includes(parsedYear)
+      ? parsedYear
+      : currentYear;
+
+  const weeks = await getArchiveYearData(year, homeBattleWeek);
+
   return (
     <>
       <SiteHeader />
@@ -22,12 +48,18 @@ export default function ArchivePage() {
             Battle calendar
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-zinc-600">
-            Every week of the year, one winner. Switch years to explore past
-            seasons and see who took each week.
+            Every week of the year, top 5 projects from real battles. Switch
+            years to explore past seasons.
           </p>
 
           <div className="mt-8">
-            <ArchiveCalendar />
+            <ArchiveCalendar
+              years={years}
+              year={year}
+              weeks={weeks}
+              homeBattleYear={homeBattleWeek.battle.year}
+              homeBattleWeek={homeBattleWeek.battle.week}
+            />
           </div>
         </div>
       </main>

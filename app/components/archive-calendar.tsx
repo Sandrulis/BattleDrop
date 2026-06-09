@@ -1,24 +1,51 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
 import {
-  CURRENT_BATTLE_WEEK,
-  DEFAULT_ARCHIVE_YEAR,
-  getArchiveYearData,
-  getAvailableArchiveYears,
+  ARCHIVE_ACTIVE_WEEK_ELEMENT_ID,
   groupWeeksByMonth,
-} from "../lib/archive-data";
+  type WeekArchiveEntry,
+} from "../lib/archive";
 import { ArchiveWeekCard } from "./archive-week-card";
 
-export function ArchiveCalendar() {
-  const years = getAvailableArchiveYears();
-  const [year, setYear] = useState(DEFAULT_ARCHIVE_YEAR);
+type ArchiveCalendarProps = {
+  years: number[];
+  year: number;
+  weeks: WeekArchiveEntry[];
+  homeBattleYear: number;
+  homeBattleWeek: number;
+};
 
-  const weeks = useMemo(() => getArchiveYearData(year), [year]);
+export function ArchiveCalendar({
+  years,
+  year,
+  weeks,
+  homeBattleYear,
+  homeBattleWeek,
+}: ArchiveCalendarProps) {
+  const router = useRouter();
   const months = useMemo(() => groupWeeksByMonth(year, weeks), [year, weeks]);
   const yearIndex = years.indexOf(year);
   const canGoPrev = yearIndex > 0;
   const canGoNext = yearIndex < years.length - 1 && yearIndex !== -1;
+
+  useEffect(() => {
+    if (year !== homeBattleYear) return;
+
+    const scrollToActiveWeek = () => {
+      document
+        .getElementById(ARCHIVE_ACTIVE_WEEK_ELEMENT_ID)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const frame = requestAnimationFrame(scrollToActiveWeek);
+    return () => cancelAnimationFrame(frame);
+  }, [year, homeBattleYear]);
+
+  function navigateToYear(nextYear: number) {
+    router.push(`/archive?year=${nextYear}`);
+  }
 
   return (
     <div>
@@ -26,7 +53,7 @@ export function ArchiveCalendar() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => canGoPrev && setYear(years[yearIndex - 1])}
+            onClick={() => canGoPrev && navigateToYear(years[yearIndex - 1])}
             disabled={!canGoPrev}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Previous year"
@@ -38,7 +65,7 @@ export function ArchiveCalendar() {
           </h2>
           <button
             type="button"
-            onClick={() => canGoNext && setYear(years[yearIndex + 1])}
+            onClick={() => canGoNext && navigateToYear(years[yearIndex + 1])}
             disabled={!canGoNext}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Next year"
@@ -55,8 +82,8 @@ export function ArchiveCalendar() {
       </div>
 
       <p className="mt-4 text-sm text-zinc-600">
-        All 52 weeks of {year} — full product cards with the same details as the
-        live battle feed.
+        All 52 weeks of {year} — top 5 organic projects per week from published
+        battle entries.
       </p>
 
       <div className="mt-8 flex flex-col gap-12">
@@ -65,12 +92,12 @@ export function ArchiveCalendar() {
             <h3 className="border-b border-zinc-200 pb-3 text-[1.2rem] font-bold tracking-[0.12em] text-zinc-900 sm:text-[1.5rem]">
               {month.monthLabel}
             </h3>
-            <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="mt-5 flex flex-col gap-3">
               {month.weeks.map((entry) => {
                 const isLive =
                   entry.status === "active" &&
-                  year === DEFAULT_ARCHIVE_YEAR &&
-                  entry.week === CURRENT_BATTLE_WEEK;
+                  year === homeBattleYear &&
+                  entry.week === homeBattleWeek;
 
                 return (
                   <ArchiveWeekCard
@@ -78,7 +105,7 @@ export function ArchiveCalendar() {
                     week={entry.week}
                     year={year}
                     status={entry.status}
-                    product={entry.product}
+                    topProducts={entry.topProducts}
                     isLive={isLive}
                   />
                 );

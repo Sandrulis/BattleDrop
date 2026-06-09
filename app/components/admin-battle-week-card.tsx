@@ -5,6 +5,8 @@ import { useState } from "react";
 import { AdminBattleWeekSettingsModal } from "@/app/components/admin-battle-week-settings-modal";
 import { Tooltip } from "@/app/components/tooltip";
 
+import type { CurrencyCode } from "@/app/lib/site-settings-types";
+
 function ActiveBadge() {
   return (
     <span className="inline-flex items-center rounded-full bg-[#da552f]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#da552f] ring-1 ring-[#da552f]/20">
@@ -27,7 +29,9 @@ type AdminBattleWeekCardProps = {
   minProjectsEnabled: boolean;
   minProjects: number | null;
   submitPriceLabel: string;
+  winnerMoneyPriceLabel: string | null;
   defaultSubmitPrice: number;
+  defaultCurrency: CurrencyCode;
 };
 
 export function AdminBattleWeekCard({
@@ -40,7 +44,9 @@ export function AdminBattleWeekCard({
   minProjectsEnabled,
   minProjects,
   submitPriceLabel,
+  winnerMoneyPriceLabel,
   defaultSubmitPrice,
+  defaultCurrency,
 }: AdminBattleWeekCardProps) {
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -62,6 +68,12 @@ export function AdminBattleWeekCard({
             <p className="flex flex-wrap items-center gap-2 text-lg font-semibold tracking-tight text-zinc-900">
               <span>
                 Week {week}, {year}
+                {isEnabled && winnerMoneyPriceLabel ? (
+                  <span className="ml-2 inline-flex items-center gap-1 text-base font-semibold text-emerald-700">
+                    <i className="fas fa-trophy text-[13px]" aria-hidden />
+                    {winnerMoneyPriceLabel}
+                  </span>
+                ) : null}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <button
@@ -122,6 +134,7 @@ export function AdminBattleWeekCard({
         year={year}
         dateRange={dateRange}
         defaultSubmitPrice={defaultSubmitPrice}
+        defaultCurrency={defaultCurrency}
         onClose={() => setSettingsOpen(false)}
         onSaved={() => router.refresh()}
       />

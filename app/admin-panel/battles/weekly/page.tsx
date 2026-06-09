@@ -37,6 +37,7 @@ export default async function AdminWeeklyBattlesPage({
   const weeks = getAdminYearWeeks(selectedYear, dateSettings, records, {
     settingsByWeek: weekSettings.settingsByWeek,
     defaultSubmitPrice: weekSettings.defaultSubmitPrice,
+    defaultCurrency: weekSettings.defaultCurrency,
   });
   const scrollToWeek =
     selectedYear === activeYear ? getAdminActiveWeek() : null;
@@ -55,6 +56,7 @@ export default async function AdminWeeklyBattlesPage({
         weeks={weeks}
         scrollToWeek={scrollToWeek}
         defaultSubmitPrice={weekSettings.defaultSubmitPrice}
+        defaultCurrency={weekSettings.defaultCurrency}
       />
     </div>
   );

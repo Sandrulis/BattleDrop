@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAdminAlertCounts } from "@/app/lib/admin-alerts/get-admin-alert-counts";
 import { getUserAvailableAffiliates } from "@/app/lib/affiliates/get-user-available-affiliates";
 import { isAffiliatesEnabled } from "@/app/lib/affiliates/is-affiliates-enabled";
 import { isShopEnabled } from "@/app/lib/shop/is-shop-enabled";
@@ -25,11 +26,13 @@ export async function SiteHeader() {
     user = authUser;
   }
 
-  const [appUser, affiliatesEnabled, shopEnabled] = await Promise.all([
-    user ? getCurrentAppUser() : Promise.resolve(null),
-    isAffiliatesEnabled(),
-    isShopEnabled(),
-  ]);
+  const [appUser, affiliatesEnabled, shopEnabled, adminAlertCounts] =
+    await Promise.all([
+      user ? getCurrentAppUser() : Promise.resolve(null),
+      isAffiliatesEnabled(),
+      isShopEnabled(),
+      user ? getAdminAlertCounts() : Promise.resolve({ support: 0, suggestions: 0 }),
+    ]);
   const [commentUpvoteCount, availableAffiliates] = appUser
     ? await Promise.all([
         getUserCommentUpvoteCount(appUser.id),
@@ -78,6 +81,9 @@ export async function SiteHeader() {
           <HeaderActions
             user={user}
             isAdmin={appUser?.is_admin ?? false}
+            adminAlertCounts={
+              appUser?.is_admin ? adminAlertCounts : undefined
+            }
             affiliatesEnabled={affiliatesEnabled}
             shopEnabled={shopEnabled}
             avatarUrl={appUser?.avatar_url}

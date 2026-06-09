@@ -1,22 +1,25 @@
 import Link from "next/link";
-import {
-  hallOfFameEntries,
-  hallOfFameMonth,
-} from "../lib/mock-data";
 import { AffiliateCopyLinkButton } from "@/app/components/affiliate-copy-link-button";
 import { SidebarPoll } from "@/app/components/sidebar-poll";
 import type { HomeBattleWeek } from "@/app/lib/battle-week-settings/get-home-battle-week";
+import {
+  formatHallOfFameWeekLabel,
+  type PreviousWeekHallOfFame,
+} from "@/app/lib/hall-of-fame/get-previous-week-hall-of-fame";
 import type { HomePoll } from "@/app/lib/polls/poll-types";
 import { formatBattleStartHoursLabel } from "@/app/lib/battle-week-status";
 import {
   formatAffiliateExchangeArrow,
   formatAffiliateHomeSidebarBlurb,
 } from "@/app/lib/shop/format-shop-exchange-rate";
-import { formatDisplayPoints } from "@/app/lib/site-settings/format-display-money";
+import { formatDisplayMoney, formatDisplayPoints } from "@/app/lib/site-settings/format-display-money";
+import { getCurrentAppUser } from "@/app/lib/users/get-current-user";
+import { getEffectiveCurrencyForUser } from "@/app/lib/users/user-currency-preferences";
 
 type SidebarProps = {
   homeBattleWeek: HomeBattleWeek;
   poll?: HomePoll | null;
+  previousWeekHallOfFame?: PreviousWeekHallOfFame | null;
   isSignedIn?: boolean;
   affiliatesEnabled?: boolean;
   affiliatesPerPoint?: number;
@@ -26,13 +29,21 @@ type SidebarProps = {
 export async function Sidebar({
   homeBattleWeek,
   poll = null,
+  previousWeekHallOfFame = null,
   isSignedIn = false,
   affiliatesEnabled = false,
   affiliatesPerPoint,
   affiliateLink,
 }: SidebarProps) {
-  const { battle, battleStartHoursFromWeekStart, submitPrice } = homeBattleWeek;
+  const { battle, battleStartHoursFromWeekStart, submitPrice, winnerMoneyPrice } =
+    homeBattleWeek;
+  const user = await getCurrentAppUser();
+  const currency = await getEffectiveCurrencyForUser(user?.id ?? null);
   const entryFeeLabel = formatDisplayPoints(submitPrice);
+  const winnerPrizeLabel =
+    winnerMoneyPrice > 0
+      ? formatDisplayMoney(winnerMoneyPrice, currency)
+      : null;
   const battleStartHoursLabel = formatBattleStartHoursLabel(
     battleStartHoursFromWeekStart,
   );
@@ -105,37 +116,40 @@ export async function Sidebar({
               6
             </span>
             <span>
-              Weekly winner → monthly championship → December Grand Prix.
+              Weekly winner{winnerPrizeLabel ? ` (${winnerPrizeLabel} cash prize)` : ""}{" "}
+              → monthly championship → December Grand Prix.
             </span>
           </li>
         </ol>
       </div>
 
-      <div
-        id="hall"
-        className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900">Hall of Fame</h3>
-          <span className="text-xs font-medium text-zinc-500">{hallOfFameMonth}</span>
-        </div>
-        <p className="mt-1 text-xs text-zinc-500">
-          Top 5 each week — locked forever for that product.
-        </p>
-        <ul className="mt-3 space-y-2">
-          {hallOfFameEntries.map(
-            (name) => (
+      {previousWeekHallOfFame ? (
+        <div
+          id="hall"
+          className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-zinc-900">Hall of Fame</h3>
+            <span className="text-xs font-medium text-zinc-500">
+              {formatHallOfFameWeekLabel(
+                previousWeekHallOfFame.week,
+                previousWeekHallOfFame.year,
+              )}
+            </span>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {previousWeekHallOfFame.entries.map((entry) => (
               <li
-                key={name}
+                key={entry.id}
                 className="flex items-center gap-2 text-xs font-medium text-zinc-700"
               >
                 <span className="text-amber-500">★</span>
-                {name}
+                {entry.name}
               </li>
-            ),
-          )}
-        </ul>
-      </div>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {affiliatesEnabled && affiliatesPerPoint !== undefined ? (
         <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-5">

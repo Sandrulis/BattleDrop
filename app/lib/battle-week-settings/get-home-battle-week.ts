@@ -66,6 +66,7 @@ export type HomeBattleWeek = {
   battle: Battle;
   battleStartHoursFromWeekStart: number;
   submitPrice: number;
+  winnerMoneyPrice: number;
   timing: BattleWeekTiming;
   status: BattleWeekDisplayStatus;
   shuffleBeforeVoting: boolean;
@@ -214,6 +215,7 @@ export async function getHomeBattleWeek(): Promise<HomeBattleWeek> {
     },
     battleStartHoursFromWeekStart: siteSettings.battleStartHoursFromWeekStart,
     submitPrice: weekSettings.effectiveSubmitPrice,
+    winnerMoneyPrice: weekSettings.effectiveWinnerMoneyPrice,
     timing,
     status,
     shuffleBeforeVoting: shouldShuffleBeforeVoting(status),

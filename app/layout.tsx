@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { AffiliateRefCapture } from "@/app/components/affiliate-ref-capture";
+import { CookieConsentProvider } from "@/app/components/cookie-consent-provider";
+import {
+  getSiteLegalPageContent,
+  hasPublishedPrivacyPage,
+} from "@/app/lib/site-legal-pages/get-site-legal-pages";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
 import { SiteCurrencySettingsProvider } from "@/app/components/site-currency-settings-provider";
@@ -45,20 +50,28 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentAppUser();
-  const [dateSettings, currency] = await Promise.all([
-    getEffectiveDateTimeSettingsForUser(user?.id ?? null),
-    getEffectiveCurrencyForUser(user?.id ?? null),
-  ]);
+  const [dateSettings, currency, cookieContent, showPrivacyLink] =
+    await Promise.all([
+      getEffectiveDateTimeSettingsForUser(user?.id ?? null),
+      getEffectiveCurrencyForUser(user?.id ?? null),
+      getSiteLegalPageContent("cookie"),
+      hasPublishedPrivacyPage(),
+    ]);
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <body className="flex min-h-full flex-col bg-[#f6f4ef] font-sans text-zinc-900 antialiased">
+      <body className="flex min-h-dvh flex-col overflow-x-hidden bg-[#f6f4ef] font-sans text-zinc-900 antialiased">
         <SiteDateSettingsProvider settings={dateSettings}>
           <SiteCurrencySettingsProvider currency={currency}>
-            <Suspense fallback={null}>
-              <AffiliateRefCapture />
-            </Suspense>
-            {children}
+            <CookieConsentProvider
+              cookieContent={cookieContent}
+              showPrivacyLink={showPrivacyLink}
+            >
+              <Suspense fallback={null}>
+                <AffiliateRefCapture />
+              </Suspense>
+              {children}
+            </CookieConsentProvider>
           </SiteCurrencySettingsProvider>
         </SiteDateSettingsProvider>
       </body>

@@ -7,7 +7,12 @@ import {
   DEFAULT_MIN_PROJECTS,
   type BattleWeekSettingsPayload,
 } from "@/app/lib/battle-week-settings/types";
-import { formatDisplayPoints, formatPointsAmount } from "@/app/lib/site-settings/format-display-money";
+import {
+  formatDisplayPoints,
+  formatPointsAmount,
+  getCurrencySymbol,
+} from "@/app/lib/site-settings/format-display-money";
+import type { CurrencyCode } from "@/app/lib/site-settings-types";
 
 const inputClassName =
   "w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200";
@@ -17,6 +22,7 @@ type BattleWeekSettingsForm = {
   minProjectsEnabled: boolean;
   minProjects: string;
   submitPrice: string;
+  winnerMoneyPrice: string;
   defaultSubmitPrice: number;
 };
 
@@ -26,6 +32,7 @@ type AdminBattleWeekSettingsModalProps = {
   year: number;
   dateRange: string;
   defaultSubmitPrice: number;
+  defaultCurrency: CurrencyCode;
   onClose: () => void;
   onSaved?: () => void;
 };
@@ -36,6 +43,7 @@ function buildInitialForm(defaultSubmitPrice: number): BattleWeekSettingsForm {
     minProjectsEnabled: false,
     minProjects: String(DEFAULT_MIN_PROJECTS),
     submitPrice: formatPointsAmount(defaultSubmitPrice),
+    winnerMoneyPrice: "",
     defaultSubmitPrice,
   };
 }
@@ -46,6 +54,7 @@ export function AdminBattleWeekSettingsModal({
   year,
   dateRange,
   defaultSubmitPrice,
+  defaultCurrency,
   onClose,
   onSaved,
 }: AdminBattleWeekSettingsModalProps) {
@@ -83,6 +92,10 @@ export function AdminBattleWeekSettingsModal({
           submitPrice: formatPointsAmount(
             data.effectiveSubmitPrice ?? data.defaultSubmitPrice ?? defaultSubmitPrice,
           ),
+          winnerMoneyPrice:
+            (data.effectiveWinnerMoneyPrice ?? 0) > 0
+              ? formatPointsAmount(data.effectiveWinnerMoneyPrice)
+              : "",
           defaultSubmitPrice:
             data.defaultSubmitPrice ?? defaultSubmitPrice,
         });
@@ -129,6 +142,11 @@ export function AdminBattleWeekSettingsModal({
               ? Number(form.minProjects)
               : null,
           submitPrice: form.isEnabled ? Number(form.submitPrice) : null,
+          winnerMoneyPrice: form.isEnabled
+            ? form.winnerMoneyPrice === ""
+              ? 0
+              : Number(form.winnerMoneyPrice)
+            : 0,
         }),
       });
 
@@ -170,6 +188,7 @@ export function AdminBattleWeekSettingsModal({
   const usesSiteDefaultPrice =
     form.isEnabled &&
     Number(form.submitPrice) === form.defaultSubmitPrice;
+  const currencySymbol = getCurrencySymbol(defaultCurrency);
 
   return (
     <>
@@ -268,6 +287,36 @@ export function AdminBattleWeekSettingsModal({
                     <p className="mt-1.5 text-sm text-zinc-500">
                       Site default: {formatDisplayPoints(form.defaultSubmitPrice)}
                       {usesSiteDefaultPrice ? " · using default" : " · custom for this week"}
+                    </p>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-zinc-900">
+                      Winner cash prize
+                    </span>
+                    <div className="relative mt-1.5">
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
+                        {currencySymbol}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={form.winnerMoneyPrice}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            winnerMoneyPrice: event.target.value,
+                          }))
+                        }
+                        disabled={saving}
+                        placeholder="0"
+                        className={`${inputClassName} pl-9`}
+                      />
+                    </div>
+                    <p className="mt-1.5 text-sm text-zinc-500">
+                      Leave empty for no cash prize. Shown on the home page when
+                      greater than zero.
                     </p>
                   </label>
                 </>

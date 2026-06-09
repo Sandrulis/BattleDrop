@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   COUNTDOWN_PLACEHOLDER,
@@ -107,37 +108,52 @@ export function MonthBattleBanner() {
         </div>
 
         <ul className="mt-4 grid grid-cols-1 gap-2 min-[480px]:grid-cols-2 lg:grid-cols-5">
-          {sortedContenders.map((entry, index) => (
-            <li
-              key={entry.id}
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-1 rounded-lg border border-orange-100/80 bg-white/90 p-1.5 sm:gap-1.5 sm:p-2"
-            >
-              <VoteButton
-                compact
-                count={entry.displayVotes}
-                voted={votedIds.has(entry.id)}
-                onClick={() => toggleVote(entry.id)}
-              />
-              <div className="min-w-0 px-0.5">
-                <p className="truncate text-[11px] font-semibold leading-tight text-zinc-900 sm:text-xs">
-                  #{index + 1} {entry.name}
-                </p>
-                <p className="truncate text-[9px] leading-tight text-zinc-500 sm:text-[10px]">
-                  {entry.weekLabel}
-                </p>
-              </div>
-              <CommentButton
-                compact
-                count={entry.comments}
-                itemName={entry.name}
-                href={
-                  getProductIdByName(entry.name)
-                    ? `/products/${getProductIdByName(entry.name)}`
-                    : undefined
-                }
-              />
-            </li>
-          ))}
+          {sortedContenders.map((entry, index) => {
+            const productId = getProductIdByName(entry.name);
+            const productHref = productId ? `/products/${productId}` : undefined;
+
+            return (
+              <li
+                key={entry.id}
+                className="grid grid-cols-[auto_1fr_auto] items-center gap-1 rounded-lg border border-orange-100/80 bg-white/90 p-1.5 sm:gap-1.5 sm:p-2"
+              >
+                <VoteButton
+                  compact
+                  count={entry.displayVotes}
+                  voted={votedIds.has(entry.id)}
+                  onClick={() => toggleVote(entry.id)}
+                />
+                {productHref ? (
+                  <Link
+                    href={productHref}
+                    className="min-w-0 rounded-md px-0.5 transition-colors hover:bg-orange-50/80"
+                  >
+                    <p className="truncate text-[11px] font-semibold leading-tight text-zinc-900 sm:text-xs">
+                      #{index + 1} {entry.name}
+                    </p>
+                    <p className="truncate text-[9px] leading-tight text-zinc-500 sm:text-[10px]">
+                      {entry.weekLabel}
+                    </p>
+                  </Link>
+                ) : (
+                  <div className="min-w-0 px-0.5">
+                    <p className="truncate text-[11px] font-semibold leading-tight text-zinc-900 sm:text-xs">
+                      #{index + 1} {entry.name}
+                    </p>
+                    <p className="truncate text-[9px] leading-tight text-zinc-500 sm:text-[10px]">
+                      {entry.weekLabel}
+                    </p>
+                  </div>
+                )}
+                <CommentButton
+                  compact
+                  count={entry.comments}
+                  itemName={entry.name}
+                  href={productHref}
+                />
+              </li>
+            );
+          })}
         </ul>
       </div>
 

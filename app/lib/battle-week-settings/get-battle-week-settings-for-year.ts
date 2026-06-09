@@ -47,6 +47,7 @@ export function resolveEffectiveWeekSettings(
     minProjectsEnabled: settings.minProjectsEnabled,
     minProjects: settings.minProjects,
     effectiveSubmitPrice: settings.submitPrice ?? defaultSubmitPrice,
+    effectiveWinnerMoneyPrice: settings.winnerMoneyPrice,
     effectiveProjectsRequired:
       settings.minProjectsEnabled && settings.minProjects !== null
         ? settings.minProjects

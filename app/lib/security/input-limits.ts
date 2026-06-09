@@ -11,6 +11,14 @@ export const INPUT_LIMITS = {
   integrationDescription: 2000,
   pollQuestion: 500,
   pollOption: 200,
+  supportSubject: 200,
+  supportMessage: 5000,
+  suggestionTitle: 200,
+  suggestionDescription: 5000,
+  blogTitle: 200,
+  blogDescription: 500,
+  blogContent: 50000,
+  siteLegalContent: 50000,
 } as const;
 
 export function assertMaxLength(

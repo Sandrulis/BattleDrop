@@ -1,5 +1,6 @@
 import { BattleHero } from "./components/battle-hero";
 import { MonthBattleBanner } from "./components/month-battle-banner";
+import { YearBattleBanner } from "./components/year-battle-banner";
 import { ProductFeed } from "./components/product-feed";
 import { Sidebar } from "./components/sidebar";
 import { SiteFooter } from "./components/site-footer";
@@ -16,11 +17,14 @@ import { getBattleWeekProducts } from "./lib/projects/get-battle-week-products";
 import { getPromotedSlotsForWeek } from "./lib/promoted-slots/get-promoted-slots-for-week";
 import { formatBattleWeekRange } from "./lib/battle-week";
 import { getCurrentAppUser } from "./lib/users/get-current-user";
+import { getEffectiveCurrencyForUser } from "./lib/users/user-currency-preferences";
 import { getEffectiveDateTimeSettingsForUser } from "./lib/users/user-date-time-preferences";
+import { formatDisplayMoney } from "./lib/site-settings/format-display-money";
+import { getPreviousWeekHallOfFame } from "./lib/hall-of-fame/get-previous-week-hall-of-fame";
 
 export default async function Home() {
   const homeBattleWeek = await getHomeBattleWeek();
-  const { battle, battleStartHoursFromWeekStart, submitPrice, timing } =
+  const { battle, battleStartHoursFromWeekStart, submitPrice, winnerMoneyPrice, timing } =
     homeBattleWeek;
 
   const [
@@ -30,6 +34,7 @@ export default async function Home() {
     currentUser,
     affiliatesEnabled,
     shopSettings,
+    previousWeekHallOfFame,
   ] = await Promise.all([
     getBattleWeekProducts(battle.year, battle.week),
     getPromotedSlotsForWeek(battle.year, battle.week),
@@ -37,6 +42,7 @@ export default async function Home() {
     getCurrentAppUser(),
     isAffiliatesEnabled(),
     getShopSettings(),
+    getPreviousWeekHallOfFame(battle.year, battle.week),
   ]);
   const products = await enrichProductsWithCommentCounts(battleWeekProducts);
 
@@ -52,6 +58,11 @@ export default async function Home() {
     battle.year,
     dateSettings,
   );
+  const currency = await getEffectiveCurrencyForUser(currentUser?.id ?? null);
+  const winnerMoneyPriceLabel =
+    winnerMoneyPrice > 0
+      ? formatDisplayMoney(winnerMoneyPrice, currency)
+      : null;
   const affiliateLink =
     affiliatesEnabled && currentUser
       ? buildAffiliateLink(await ensureAffiliateCode(currentUser.id))
@@ -62,11 +73,13 @@ export default async function Home() {
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-5">
+        <YearBattleBanner />
         <MonthBattleBanner />
         <BattleHero
           battle={battle}
           battleStartHoursFromWeekStart={battleStartHoursFromWeekStart}
           submitPrice={submitPrice}
+          winnerMoneyPriceLabel={winnerMoneyPriceLabel}
           timing={timing}
           weekRangeLabel={weekRangeLabel}
         />
@@ -82,6 +95,7 @@ export default async function Home() {
           <Sidebar
             homeBattleWeek={homeBattleWeek}
             poll={poll}
+            previousWeekHallOfFame={previousWeekHallOfFame}
             isSignedIn={currentUser !== null}
             affiliatesEnabled={affiliatesEnabled}
             affiliatesPerPoint={

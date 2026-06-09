@@ -15,12 +15,14 @@ import {
   type CountdownState,
 } from "../lib/countdown";
 import { formatDisplayPoints } from "../lib/site-settings/format-display-money";
+
 import type { Battle } from "../lib/types";
 
 type BattleHeroProps = {
   battle: Battle;
   battleStartHoursFromWeekStart: number;
   submitPrice: number;
+  winnerMoneyPriceLabel: string | null;
   timing: BattleWeekTiming;
   weekRangeLabel: string;
 };
@@ -35,6 +37,7 @@ export function BattleHero({
   battle,
   battleStartHoursFromWeekStart,
   submitPrice,
+  winnerMoneyPriceLabel,
   timing,
   weekRangeLabel,
 }: BattleHeroProps) {
@@ -101,6 +104,12 @@ export function BattleHero({
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
               Week {battle.week}, {battle.year}
+              {winnerMoneyPriceLabel ? (
+                <span className="ml-2 inline-flex items-center gap-1.5 text-lg font-medium text-emerald-700 sm:text-xl">
+                  <i className="fas fa-trophy text-[0.85em]" aria-hidden />
+                  {winnerMoneyPriceLabel}
+                </span>
+              ) : null}
               <span className="ml-2 text-lg font-medium text-zinc-500 sm:text-xl">
                 · {formatDisplayPoints(submitPrice)} per submit
               </span>

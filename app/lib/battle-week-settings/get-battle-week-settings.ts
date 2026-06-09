@@ -42,5 +42,6 @@ export async function getBattleWeekSettings(
     ...settings,
     defaultSubmitPrice,
     effectiveSubmitPrice: effective.effectiveSubmitPrice,
+    effectiveWinnerMoneyPrice: effective.effectiveWinnerMoneyPrice,
   };
 }

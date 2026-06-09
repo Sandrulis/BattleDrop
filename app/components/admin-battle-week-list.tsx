@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { CurrencyCode } from "@/app/lib/site-settings-types";
 import type { AdminWeekBlock } from "@/app/lib/admin-battles-data";
 import { AdminBattleWeekCard } from "./admin-battle-week-card";
 
@@ -8,12 +9,14 @@ type AdminBattleWeekListProps = {
   weeks: AdminWeekBlock[];
   scrollToWeek: number | null;
   defaultSubmitPrice: number;
+  defaultCurrency: CurrencyCode;
 };
 
 export function AdminBattleWeekList({
   weeks,
   scrollToWeek,
   defaultSubmitPrice,
+  defaultCurrency,
 }: AdminBattleWeekListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeWeekRef = useRef<HTMLDivElement>(null);
@@ -57,6 +60,7 @@ export function AdminBattleWeekList({
             <AdminBattleWeekCard
               {...week}
               defaultSubmitPrice={defaultSubmitPrice}
+              defaultCurrency={defaultCurrency}
             />
           </div>
         ))}

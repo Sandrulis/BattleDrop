@@ -33,12 +33,6 @@ export const ADMIN_PANEL_NAV: AdminPanelNavItem[] = [
     description: "Review weekly, monthly, and annual battle outcomes.",
   },
   {
-    href: "/admin-panel/todo",
-    label: "Todo",
-    icon: "fa-list-check",
-    description: "Track admin tasks with drag-and-drop columns.",
-  },
-  {
     href: "/admin-panel/integrations",
     label: "Integrations",
     icon: "fa-plug",
@@ -57,10 +51,52 @@ export const ADMIN_PANEL_NAV: AdminPanelNavItem[] = [
     description: "Create site-wide polls and track vote progress.",
   },
   {
+    href: "/admin-panel/blog",
+    label: "Blog",
+    icon: "fa-newspaper",
+    description: "Write and publish articles with BBCode formatting and images.",
+  },
+  {
+    href: "/admin-panel/privacy",
+    label: "Privacy",
+    icon: "fa-shield-halved",
+    description: "Edit the privacy policy shown at /privacy.",
+  },
+  {
+    href: "/admin-panel/rules",
+    label: "Rules",
+    icon: "fa-scale-balanced",
+    description: "Edit the site rules shown at /rules.",
+  },
+  {
+    href: "/admin-panel/cookie",
+    label: "Cookie",
+    icon: "fa-cookie-bite",
+    description: "Edit cookie rules, the /cookie page, and the first-visit popup.",
+  },
+  {
     href: "/admin-panel/settings",
     label: "Settings",
     icon: "fa-gear",
     description: "Configure site-wide defaults such as date and time formats.",
+  },
+  {
+    href: "/admin-panel/support",
+    label: "Support",
+    icon: "fa-life-ring",
+    description: "Review user support tickets and update their status.",
+  },
+  {
+    href: "/admin-panel/suggestions",
+    label: "Suggestions",
+    icon: "fa-lightbulb",
+    description: "Review user feature ideas and mark acceptance status.",
+  },
+  {
+    href: "/admin-panel/todo",
+    label: "Todo",
+    icon: "fa-list-check",
+    description: "Track admin tasks with drag-and-drop columns.",
   },
 ];
 
